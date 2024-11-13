@@ -1,0 +1,210 @@
+- name: Function call
+  code: |-
+    fn call(param: TYPE!()) -> TYPE!() {
+        EXPRE!(param)
+    }
+    call(SOURCE!())
+
+- name: Array
+  code: |-
+    let array = [SOURCE!(), VALUE!()];
+    array[0].clone()
+
+- name: Tuple
+  code: |-
+    let tuple = (SOURCE!(), String::from("Hello, world!"));
+    tuple.0
+
+- name: Shared slice
+  code: |-
+    let slice = &[SOURCE!(), VALUE!()][..];
+    slice[0].clone()
+
+- name: Mutable slice
+  code: |-
+    let slice = &mut [SOURCE!(), VALUE!()][..];
+    slice[0].clone()
+
+- name: Boxed slice
+  code: |-
+    let boxed_array = Box::new([SOURCE!(), VALUE!()]);
+    let slice = &boxed_array[..];
+    slice[0].clone()
+
+- name: Struct(struct)
+  code: |-
+    struct Struct {
+        place: TYPE!(),
+        other: String
+    };
+
+    let struct_struct = Struct {
+        place: SOURCE!(),
+        other: String::from("Hello, world!")
+    };
+    struct_struct.place
+
+- name: Struct(tuple)
+  code: |-
+    struct Struct (
+        TYPE!(),
+        String
+    );
+
+    let tuple_struct = Struct (
+        SOURCE!(),
+        String::from("Hello, world!")
+    );
+    tuple_struct.0
+
+- name: Struct update syntax
+  code: |-
+    struct Struct {
+        place: TYPE!(),
+        other: String
+    }
+
+    let base = Struct {
+        place: SOURCE!(),
+        other: String::from("Hello, world!")
+    };
+    let struct_struct = Struct { other: String::from("Hello, world!"), ..base};
+    struct_struct.place
+
+- name: Enum(Tuple)
+  code: |-
+    enum Enum {
+        Place(TYPE!()),
+        Other(String),
+    }
+
+    let tuple_enum = Enum::Place(SOURCE!());
+    match tuple_enum {
+        Enum::Place(param) => EXPRE!(param),
+        Enum::Other(_) => VALUE!(),
+    }
+
+- name: Enum(Tuple)
+  code: |-
+    enum Enum {
+        Place(TYPE!()),
+        Other(String),
+    }
+
+    let tuple_enum = Enum::Place(SOURCE!());
+    if let Enum::Place(param) = tuple_enum {
+        EXPRE!(param)
+    } else {
+        VALUE!()
+    }
+
+- name: Enum(Struct)
+  code: |-
+    enum Enum {
+        Place{ place: TYPE!(), other: String },
+        Other(String),
+    }
+
+    let struct_enum = Enum::Place{ place: SOURCE!(), other: String::from("Hello, world!")};
+    match struct_enum {
+        Enum::Place{ place: param, other: _ } => EXPRE!(param),
+        Enum::Other(_) => VALUE!(),
+    }
+
+- name: Enum(Struct)
+  code: |-
+    enum Enum {
+        Place{ place: TYPE!(), other: String },
+        Other(String),
+    }
+
+    let struct_enum = Enum::Place{ place: SOURCE!(), other: String::from("Hello, world!") };
+    if let Enum::Place{ place: param, other: _ } = struct_enum {
+        EXPRE!(param)
+    } else {
+        VALUE!()
+    }
+
+- name: Enum(Option)
+  code: |-
+    match Some(SOURCE!()) {
+        Some(param) => EXPRE!(param),
+        None => VALUE!(),
+    }
+
+- name: Enum(Option)
+  code: |-
+    if let Some(param) =  Some(SOURCE!()) {
+        EXPRE!(param)
+    } else {
+        VALUE!()
+    }
+
+- name: if else
+  code: |-
+    let param = SOURCE!();
+    if COND!(BOOL) {
+        EXPRE!(param)
+    } else {
+        EXPRE!(param)
+    }
+
+- name: if let
+  code: |-
+    let param = SOURCE!();
+    if let if_let = param {
+        EXPRE!(if_let)
+    } else {
+        VALUE!()
+    }
+
+- name: match
+  code: |-
+    match SOURCE!() {
+        param => EXPRE!(param),
+        _ => VALUE!()
+    }
+
+- name: loop(if else)
+  code: |-
+    let mut param = SOURCE!();
+    loop {
+        param = EXPRE!(param);
+        if COND!(BOOL) {
+            break EXPRE!(param)
+        } else {
+            break EXPRE!(param)
+        }
+    }
+
+- name: loop(if let)
+  code: |-
+    let mut param = SOURCE!();
+    loop {
+        param = EXPRE!(param);
+        if let if_let = param {
+            break EXPRE!(if_let)
+        } else {
+            break VALUE!()
+        }
+    }
+
+- name: while(i)
+  code: |-
+    let mut param = SOURCE!();
+    let mut i = 0;
+    while i < 32 {
+        param = EXPRE!(param);
+        i = i + 1;
+    }
+    param
+
+# - name: Array(copy)
+#   tags:
+#     - Data flow
+#   features:
+#     - Array Initialization
+#     - Index Access
+#   code: |-
+#     let array = [SOURCE!(); 32];
+#     array[0]
