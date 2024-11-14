@@ -1,3 +1,9 @@
+use clap::Parser;
+use cli::Cli;
+
+mod cli;
+
 fn main() {
-    println!("Hello, world!");
+    env_logger::init();
+    Cli::parse().main();
 }
