@@ -9,9 +9,9 @@
     - Function std::alloc::alloc
   type: |-
     Layout
-  default: |-
+  value: |-
     Layout::from_size_align(1, 1).unwrap()
-  TP:
+  POS:
     source: |-
       Layout::from_size_align(0, 1).unwrap()
     code: |-
@@ -21,7 +21,7 @@
           let ptr = unsafe { alloc(layout) }; // SINK
           unsafe { dealloc(ptr, layout) };
       }
-  FP:
+  NEG:
     source: |-
       Layout::from_size_align(1, 1).unwrap()
     code: |-
@@ -41,9 +41,9 @@
     - Function std::alloc::alloc
   type: |-
     *mut u8
-  default: |-
+  value: |-
     &mut 0usize as *mut usize as *mut u8
-  TP:
+  POS:
     source: |-
       unsafe { alloc(layout) }
     code: |-
@@ -57,7 +57,7 @@
               dealloc(ptr, layout);
           }
       }
-  FP:
+  NEG:
     source: |-
       unsafe { alloc(layout) }
     code: |-
@@ -82,9 +82,9 @@
     - Function std::alloc::alloc_zeroed
   type: |-
     Layout
-  default: |-
+  value: |-
     Layout::from_size_align(1, 1).unwrap()
-  TP:
+  POS:
     source: |-
       Layout::from_size_align(0, 1).unwrap()
     code: |-
@@ -94,7 +94,7 @@
           let ptr = unsafe { alloc_zeroed(layout) }; // SINK
           unsafe { dealloc(ptr, layout) };
       }
-  FP:
+  NEG:
     source: |-
       Layout::from_size_align(1, 1).unwrap()
     code: |-
@@ -114,9 +114,9 @@
     - Function std::alloc::alloc_zeroed
   type: |-
     *mut u8
-  default: |-
+  value: |-
     &mut NonZeroUsize::new(1).unwrap() as *mut NonZeroUsize as *mut u8
-  TP:
+  POS:
     source: |-
       unsafe { alloc_zeroed(layout) }
     code: |-
@@ -134,7 +134,7 @@
               dealloc(ptr, layout);
           }
       }
-  FP:
+  NEG:
     source: |-
       unsafe { alloc_zeroed(layout) }
     code: |-
@@ -163,9 +163,9 @@
     - Function std::alloc::dealloc
   type: |-
     Layout
-  default: |-
+  value: |-
     Layout::new::<usize>()
-  TP:
+  POS:
     source: |-
       Layout::new::<usize>()
     code: |-
@@ -179,7 +179,7 @@
               dealloc(ptr, layout); // SINK
           }
       }
-  FP:
+  NEG:
     source: |-
       Layout::new::<usize>()
     code: |-
@@ -202,9 +202,9 @@
     - Function std::alloc::dealloc
   type: |-
     *mut u8
-  default: |-
+  value: |-
     &mut 0usize as *mut usize as *mut u8
-  TP:
+  POS:
     source: |-
       null_mut()
     code: |-
@@ -217,7 +217,7 @@
               dealloc(ptr, layout); // SINK
           }
       }
-  FP:
+  NEG:
     source: |-
       unsafe { alloc(layout) }
     code: |-
@@ -240,9 +240,9 @@
     - Function std::alloc::realloc
   type: |-
     Layout
-  default: |-
+  value: |-
     Layout::from_size_align(1, 1).unwrap()
-  TP:
+  POS:
     source: |-
       Layout::from_size_align(1, 2).unwrap()
     code: |-
@@ -254,7 +254,7 @@
           ptr = unsafe { realloc(ptr, layout, 2) }; // SINK
           unsafe { dealloc(ptr, layout) };
       }
-  FP:
+  NEG:
     source: |-
       Layout::from_size_align(1, 1).unwrap()
     code: |-
@@ -276,9 +276,9 @@
     - Function std::alloc::realloc
   type: |-
     usize
-  default: |-
+  value: |-
     1
-  TP:
+  POS:
     source: |-
       0
     code: |-
@@ -291,7 +291,7 @@
           
           unsafe { dealloc(ptr, layout) };
       }
-  FP:
+  NEG:
     source: |-
       2
     code: |-
@@ -314,9 +314,9 @@
     - Function std::alloc::realloc
   type: |-
     *mut u8
-  default: |-
+  value: |-
     &mut 0u8 as *mut u8
-  TP:
+  POS:
     source: |-
       null_mut()
     code: |-
@@ -329,7 +329,7 @@
           layout = Layout::from_size_align(2, 1).unwrap();
           unsafe { dealloc(ptr, layout) };
       }
-  FP:
+  NEG:
     source: |-
       unsafe { alloc(layout) }
     code: |-
@@ -352,9 +352,9 @@
     - Function std::alloc::realloc
   type: |-
     *mut u8
-  default: |-
+  value: |-
     &mut 0u8 as *mut u8
-  TP:
+  POS:
     source: |-
       unsafe { alloc(layout) }
     code: |-
@@ -368,7 +368,7 @@
           layout = Layout::from_size_align(2, 1).unwrap();
           unsafe { dealloc(new_ptr, layout) };
       }
-  FP:
+  NEG:
     source: |-
       unsafe { alloc(layout) }
     code: |-
@@ -392,9 +392,9 @@
     - Function std::collections::hash::map::HashMap::get_many_unchecked_mut
   type: |-
     [&str; 2]
-  default: |-
+  value: |-
     ["111", "111"]
-  TP:
+  POS:
     source: |-
       ["111", "111"]
     code: |-
@@ -410,7 +410,7 @@
           let ks = SOURCE!();
           unsafe { let _ = libraries.get_many_unchecked_mut(ks); }; // SINK
       }
-  FP:
+  NEG:
     source: |-
       ["111", "222"]
     code: |-
@@ -437,13 +437,13 @@
     - Method std::boxed::Box::assume_init
   type: |-
     Box<std::mem::MaybeUninit<usize>>
-  default: |-
+  value: |-
     {
         let mut x = Box::<usize>::new_uninit();
         unsafe { x.as_mut_ptr().write(5) };
         x
     }
-  TP:
+  POS:
     source: |-
       Box::<usize>::new_uninit()
     code: |-
@@ -453,7 +453,7 @@
           let y = unsafe { x.assume_init() }; // SINK
           assert_eq!(*y, 0);
       }
-  FP:
+  NEG:
     source: |-
       Box::<usize>::new_uninit()
     code: |-
@@ -474,9 +474,9 @@
     - Method std::boxed::Box::downcast_unchecked
   type: |-
     Box<dyn std::any::Any>
-  default: |-
+  value: |-
     Box::new(0_usize)
-  TP:
+  POS:
     source: |-
       Box::new(0_usize)
     code: |-
@@ -488,7 +488,7 @@
               x.downcast_unchecked::<NonZeroUsize>().get(); // SINK
           }
       }
-  FP:
+  NEG:
     source: |-
       Box::new(0_usize)
     code: |-
@@ -510,9 +510,9 @@
     - Method std::ffi::CString::from_vec_unchecked
   type: |-
     Vec<u8>
-  default: |-
+  value: |-
     b"foo".to_vec()
-  TP:
+  POS:
     source: |-
       b"fo\0o".to_vec()
     code: |-
@@ -523,7 +523,7 @@
               CString::from_vec_unchecked(x); // SINK
           }
       }
-  FP:
+  NEG:
     source: |-
       b"foo".to_vec()
     code: |-
@@ -544,9 +544,9 @@
     - Method std::ffi::CString::from_vec_with_nul_unchecked
   type: |-
     Vec<u8>
-  default: |-
+  value: |-
     b"foo\0".to_vec()
-  TP:
+  POS:
     source: |-
       b"foo".to_vec()
     code: |-
@@ -558,7 +558,7 @@
               CString::from_vec_with_nul_unchecked(x); // SINK
           }
       }
-  FP:
+  NEG:
     source: |-
       b"foo\0".to_vec()
     code: |-
@@ -581,13 +581,13 @@
     - Method std::rc::Rc::assume_init
   type: |-
     Rc<std::mem::MaybeUninit<usize>>
-  default: |-
+  value: |-
     {
         let mut x = Rc::<usize>::new_uninit();
         Rc::get_mut(&mut x).unwrap().write(5);
         x
     }
-  TP:
+  POS:
     source: |-
       Rc::<usize>::new_uninit()
     code: |-
@@ -598,7 +598,7 @@
           let y = unsafe { x.assume_init() }; // SINK
           assert_eq!(*y, 0);
       }
-  FP:
+  NEG:
     source: |-
       Rc::<usize>::new_uninit()
     code: |-
@@ -620,7 +620,7 @@
     - Method std::rc::Rc::decrement_strong_count
   type: |-
     *const usize
-  default: |-
+  value: |-
     {
         let x = Rc::new(5usize);
         let ptr = Rc::into_raw(x);
@@ -629,7 +629,7 @@
         }
         ptr
     }
-  TP:
+  POS:
     source: |-
       Rc::into_raw(x)
     code: |-
@@ -642,7 +642,7 @@
               Rc::decrement_strong_count(ptr); // SINK
           }
       }
-  FP:
+  NEG:
     source: |-
       Rc::into_raw(x)
     code: |-
@@ -664,9 +664,9 @@
     - Method std::rc::Rc::get_mut_unchecked
   type: |-
     Rc<&str>
-  default: |-
+  value: |-
     x.clone().into();
-  TP:
+  POS:
     source: |-
       x.clone().into()
     code: |-
@@ -683,7 +683,7 @@
           }
           let _ = x.len();
       }
-  FP:
+  NEG:
     source: |-
       x.clone().into()
     code: |-
@@ -710,9 +710,9 @@
     - Method std::rc::Rc::increment_strong_count
   type: |-
     *const usize
-  default: |-
+  value: |-
     Rc::into_raw(y)
-  TP:
+  POS:
     source: |-
       {
           let ptr = Rc::into_raw(x);
@@ -728,7 +728,7 @@
               Rc::increment_strong_count(ptr); // SINK
           }
       }
-  FP:
+  NEG:
     source: |-
       Rc::into_raw(x)
     code: |-
@@ -753,9 +753,9 @@
     - Function alloc::str::from_boxed_utf8_unchecked
   type: |-
     Box<[u8]>
-  default: |-
+  value: |-
     Box::new([240, 159, 146, 150])
-  TP:
+  POS:
     source: |-
       Box::new([0, 159, 146, 150])
     code: |-
@@ -766,7 +766,7 @@
               let _ = str::from_boxed_utf8_unchecked(x); // SINK
           }
       }
-  FP:
+  NEG:
     source: |-
       Box::new([240, 159, 146, 150])
     code: |-
@@ -788,9 +788,9 @@
     - Method alloc::string::String::from_utf8_unchecked
   type: |-
     Vec<u8>
-  default: |-
+  value: |-
     vec![240u8, 159, 146, 150]
-  TP:
+  POS:
     source: |-
       vec![0u8, 159, 146, 150]
     code: |-
@@ -798,7 +798,7 @@
           let x = SOURCE!();
           unsafe { let _ = String::from_utf8_unchecked(x); }; // SINK
       }
-  FP:
+  NEG:
     source: |-
       vec![240u8, 159, 146, 150]
     code: |-
@@ -817,9 +817,9 @@
     - Method core::alloc::layout::Layout::from_size_align_unchecked
   type: |-
     usize
-  default: |-
+  value: |-
     1
-  TP:
+  POS:
     source: |-
       0
     code: |-
@@ -828,7 +828,7 @@
           let align = SOURCE!();
           unsafe { let _ = Layout::from_size_align_unchecked(1, align); }; // SINK
       }
-  FP:
+  NEG:
     source: |-
       1
     code: |-
@@ -847,9 +847,9 @@
     - Method core::alloc::layout::Layout::from_size_align_unchecked
   type: |-
     usize
-  default: |-
+  value: |-
     1
-  TP:
+  POS:
     source: |-
       3
     code: |-
@@ -858,7 +858,7 @@
           let align = SOURCE!();
           unsafe { let _ = Layout::from_size_align_unchecked(1, align); }; // SINK
       }
-  FP:
+  NEG:
     source: |-
       1
     code: |-
@@ -878,7 +878,7 @@
     - Method core::array::iter::IntoIter::new_unchecked
   type: |-
     [MaybeUninit<u8>; 3]
-  default: |-
+  value: |-
     {
         let mut buffer: [MaybeUninit<u8>; 3] = MaybeUninit::uninit_array();
         buffer[0].write(0);
@@ -886,7 +886,7 @@
         buffer[2].write(2);
         buffer
     }
-  TP:
+  POS:
     source: |-
       MaybeUninit::uninit_array()
     code: |-
@@ -900,7 +900,7 @@
           let x = unsafe { IntoIter::new_unchecked(buffer, 0..2) };
           let _ = x.collect::<Vec<_>>(); // SINK
       }
-  FP:
+  NEG:
     source: |-
       MaybeUninit::uninit_array()
     code: |-
@@ -927,9 +927,9 @@
     - Method core::array::iter::IntoIter::new_unchecked
   type: |-
     Range<usize>
-  default: |-
+  value: |-
     0..2
-  TP:
+  POS:
     source: |-
       0..5
     code: |-
@@ -947,7 +947,7 @@
           let x = unsafe { IntoIter::new_unchecked(buffer, range) };
           let _ = x.collect::<Vec<_>>(); // SINK
       }
-  FP:
+  NEG:
     source: |-
       0..2
     code: |-
@@ -976,9 +976,9 @@
     - Method core::cell::RefCell::try_borrow_unguarded
   type: |-
     RefCell<usize>
-  default: |-
+  value: |-
     RefCell::new(10usize)
-  TP:
+  POS:
     source: |-
       RefCell::new(5usize)
     code: |-
@@ -990,7 +990,7 @@
           *x.borrow_mut() = 10; // SINK
           let _ = *y + 1;
       }
-  FP:
+  NEG:
     source: |-
       RefCell::new(5usize)
     code: |-
@@ -1013,9 +1013,9 @@
     - Method core::char::methods::from_u32_unchecked
   type: |-
     u32
-  default: |-
+  value: |-
     0x2764
-  TP:
+  POS:
     source: |-
       0x110000
     code: |-
@@ -1024,7 +1024,7 @@
           let x: u32 = SOURCE!();
           unsafe { let _ = char::from_u32_unchecked(x); }; // SINK
       }
-  FP:
+  NEG:
     source: |-
       0x2764
     code: |-
@@ -1044,9 +1044,9 @@
     - Method core::ffi::c_str::CStr::from_bytes_with_nul_unchecked
   type: |-
     &[u8]
-  default: |-
+  value: |-
     b"hello\0"
-  TP:
+  POS:
     source: |-
       b"hello"
     code: |-
@@ -1056,7 +1056,7 @@
           let bytes: &[u8] = SOURCE!();
           unsafe { let _ = CStr::from_bytes_with_nul_unchecked(bytes); }; // SINK
       }
-  FP:
+  NEG:
     source: |-
       b"hello\0"
     code: |-
@@ -1076,9 +1076,9 @@
     - Method core::ffi::c_str::CStr::from_bytes_with_nul_unchecked
   type: |-
     &[u8]
-  default: |-
+  value: |-
     b"hello\0"
-  TP:
+  POS:
     source: |-
       b"he\0llo\0"
     code: |-
@@ -1088,7 +1088,7 @@
           let bytes = SOURCE!();
           unsafe { let _ = CStr::from_bytes_with_nul_unchecked(bytes); }; // SINK
       }
-  FP:
+  NEG:
     source: |-
       b"hello\0"
     code: |-
@@ -1108,9 +1108,9 @@
     - Method core::ffi::c_str::CStr::from_ptr
   type: |-
     *const c_char
-  default: |-
+  value: |-
     b"111!\0".as_ptr().cast()
-  TP:
+  POS:
     source: |-
       b"111".as_ptr().cast()
     code: |-
@@ -1120,7 +1120,7 @@
           let ptr: *const c_char = SOURCE!();
           unsafe { let _ = CStr::from_ptr(ptr); }; // SINK
       }
-  FP:
+  NEG:
     source: |-
       b"111\0".as_ptr().cast()
     code: |-
@@ -1140,9 +1140,9 @@
     - Method core::ffi::c_str::CStr::from_ptr
   type: |-
     *const c_char
-  default: |-
+  value: |-
     b"111!\0".as_ptr().cast()
-  TP:
+  POS:
     source: |-
       bytes.as_ptr().cast()
     code: |-
@@ -1157,7 +1157,7 @@
           bytes[0] = b'0'; // SINK
           assert_eq!(cstr.to_bytes_with_nul(), bytes);
       }
-  FP:
+  NEG:
     source: |-
       bytes.as_ptr().cast()
     code: |-
@@ -1183,9 +1183,9 @@
     - Method core::mem::manually_drop::ManuallyDrop::drop
   type: |-
     ManuallyDrop<Box<usize>>
-  default: |-
+  value: |-
     ManuallyDrop::<Box<usize>>::new(Box::new(1))
-  TP:
+  POS:
     source: |-
       ManuallyDrop::<Box<usize>>::new(Box::new(1))
     code: |-
@@ -1198,7 +1198,7 @@
           }
           ManuallyDrop::into_inner(slot);
       }
-  FP:
+  NEG:
     source: |-
       ManuallyDrop::<Box<usize>>::new(Box::new(1))
     code: |-
@@ -1219,9 +1219,9 @@
     - Method core::mem::manually_drop::ManuallyDrop::take
   type: |-
     ManuallyDrop<Box<usize>>
-  default: |-
+  value: |-
     ManuallyDrop::<Box<usize>>::new(Box::new(1))
-  TP:
+  POS:
     source: |-
       ManuallyDrop::<Box<usize>>::new(Box::new(1))
     code: |-
@@ -1233,7 +1233,7 @@
           unsafe { let _ = ManuallyDrop::take(&mut slot); }; // SINK
           ManuallyDrop::into_inner(slot);
       }
-  FP:
+  NEG:
     source: |-
       ManuallyDrop::<Box<usize>>::new(Box::new(1))
     code: |-
@@ -1256,9 +1256,9 @@
     - Function std::mem::transmute
   type: |-
     u8
-  default: |-
+  value: |-
     1
-  TP:
+  POS:
     source: |-
       2
     code: |-
@@ -1268,7 +1268,7 @@
           let src: u8 = SOURCE!();
           let _: bool = unsafe { transmute(src) }; // SINK
       }
-  FP:
+  NEG:
     source: |-
       1
     code: |-
@@ -1289,13 +1289,13 @@
     - Method core::mem::maybe_uninit::MaybeUninit::array_assume_init
   type: |-
     [MaybeUninit<i32>; 3]
-  default: |-
+  value: |-
     {
         let mut array: [MaybeUninit<i32>; 3] = MaybeUninit::uninit_array();
         array[0].write(0);
         array
     }
-  TP:
+  POS:
     source: |-
       MaybeUninit::uninit_array()
     code: |-
@@ -1311,7 +1311,7 @@
 
           let res = unsafe { MaybeUninit::array_assume_init(array) }; // SINK
       }
-  FP:
+  NEG:
     source: |-
       {
           let mut array: [MaybeUninit<i32>; 3] = MaybeUninit::uninit_array();
@@ -1341,13 +1341,13 @@
     - Method core::mem::maybe_uninit::MaybeUninit::assume_init
   type: |-
     MaybeUninit<usize>
-  default: |-
+  value: |-
     {
         let mut x = MaybeUninit::<usize>::uninit();
         x.write(1);
         x
     }
-  TP:
+  POS:
     source: |-
       MaybeUninit::<usize>::uninit()
     code: |-
@@ -1358,7 +1358,7 @@
           let x = SOURCE!();
           unsafe { x.assume_init() }; // SINK
       }
-  FP:
+  NEG:
     source: |-
       {
           let mut x = MaybeUninit::<usize>::uninit();
@@ -1383,13 +1383,13 @@
     - Method core::mem::maybe_uninit::MaybeUninit::assume_init_drop
   type: |-
     MaybeUninit<Box<usize>>
-  default: |-
+  value: |-
     {
         let mut x = MaybeUninit::<Box<usize>>::uninit();
         x.write(Box::new(1));
         x
     }
-  TP:
+  POS:
     source: |-
       MaybeUninit::<Box<usize>>::uninit()
     code: |-
@@ -1400,7 +1400,7 @@
           let mut x = SOURCE!();
           unsafe { x.assume_init_drop() }; // SINK
       }
-  FP:
+  NEG:
     source: |-
       {
           let mut x = MaybeUninit::<Box<usize>>::uninit();
@@ -1425,9 +1425,9 @@
     - Method core::mem::maybe_uninit::MaybeUninit::assume_init_drop
   type: |-
     ManuallyDrop<Box<usize>>
-  default: |-
+  value: |-
     MaybeUninit::<Box<usize>>::uninit()
-  TP:
+  POS:
     source: |-
       MaybeUninit::<Box<usize>>::uninit()
     code: |-
@@ -1442,7 +1442,7 @@
           }
           unsafe { x.assume_init() }; // SINK
       }
-  FP:
+  NEG:
     source: |-
       MaybeUninit::<Box<usize>>::uninit()
     code: |-
@@ -1466,13 +1466,13 @@
     - Method core::mem::maybe_uninit::MaybeUninit::assume_init_mut
   type: |-
     MaybeUninit<Cell<bool>>
-  default: |-
+  value: |-
     {
         let mut x = MaybeUninit::<Cell<bool>>::uninit();
         x.write(Cell::new(true));
         x
     }
-  TP:
+  POS:
     source: |-
       MaybeUninit::<Cell<bool>>::uninit()
     code: |-
@@ -1484,7 +1484,7 @@
           let mut x = SOURCE!();
           unsafe { x.assume_init_mut().set(true); } // SINK
       }
-  FP:
+  NEG:
     source: |-
       {
         let mut x = MaybeUninit::<Cell<bool>>::uninit();
@@ -1510,13 +1510,13 @@
     - Method core::mem::maybe_uninit::MaybeUninit::assume_init_read
   type: |-
     MaybeUninit<usize>
-  default: |-
+  value: |-
     {
         let mut x = MaybeUninit::<usize>::uninit();
         x.write(0);
         x
     }
-  TP:
+  POS:
     source: |-
       MaybeUninit::<usize>::uninit()
     code: |-
@@ -1528,7 +1528,7 @@
           let mut x = SOURCE!();
           unsafe { x.assume_init_read() }; // SINK
       }
-  FP:
+  NEG:
     source: |-
       {
           let mut x = MaybeUninit::<usize>::uninit();
@@ -1554,13 +1554,13 @@
     - Method core::mem::maybe_uninit::MaybeUninit::assume_init_read
   type: |-
     MaybeUninit<Box<usize>>
-  default: |-
+  value: |-
     {
         let mut x = MaybeUninit::<Box<usize>>::uninit();
         x.write(Box::new(0));
         x
     }
-  TP:
+  POS:
     source: |-
       {
           let mut x = MaybeUninit::<Box<usize>>::uninit();
@@ -1577,7 +1577,7 @@
           let mut x = SOURCE!();
           unsafe { x.assume_init_read() }; // SINK
       }
-  FP:
+  NEG:
     source: |-
       {
           let mut x = MaybeUninit::<Box<usize>>::uninit();
@@ -1603,13 +1603,13 @@
     - Method core::mem::maybe_uninit::MaybeUninit::assume_init_ref
   type: |-
     MaybeUninit<Vec<usize>>
-  default: |-
+  value: |-
     {
         let mut x = MaybeUninit::<Vec<usize>>::uninit();
         x.write(vec![0]);
         x
     }
-  TP:
+  POS:
     source: |-
       MaybeUninit::<Vec<usize>>::uninit()
     code: |-
@@ -1621,7 +1621,7 @@
           let mut x = SOURCE!();
           unsafe { x.assume_init_ref().is_empty() }; // SINK
       }
-  FP:
+  NEG:
     source: |-
       {
           let mut x = MaybeUninit::<Vec<usize>>::uninit();
@@ -1648,7 +1648,7 @@
     - Method core::mem::maybe_uninit::MaybeUninit::slice_assume_init_mut
   type: |-
     [MaybeUninit<usize>; 3]
-  default: |-
+  value: |-
     {
         let mut array: [MaybeUninit<usize>; 3] = MaybeUninit::uninit_array();
         array[0].write(0);
@@ -1656,7 +1656,7 @@
         array[2].write(2);
         array
     }
-  TP:
+  POS:
     source: |-
       {
           let mut array: [MaybeUninit<usize>; 3] = MaybeUninit::uninit_array();
@@ -1674,7 +1674,7 @@
           let mut array = SOURCE!();
           unsafe { MaybeUninit::slice_assume_init_mut(&mut array)[0] }; // SINK
       }
-  FP:
+  NEG:
     source: |-
       {
           let mut array: [MaybeUninit<usize>; 3] = MaybeUninit::uninit_array();
@@ -1703,7 +1703,7 @@
     - Method core::mem::maybe_uninit::MaybeUninit::slice_assume_init_ref
   type: |-
     [MaybeUninit<usize>; 3]
-  default: |-
+  value: |-
     {
         let mut array: [MaybeUninit<usize>; 3] = MaybeUninit::uninit_array();
         array[0].write(0);
@@ -1711,7 +1711,7 @@
         array[2].write(2);
         array
     }
-  TP:
+  POS:
     source: |-
       {
           let mut array: [MaybeUninit<usize>; 3] = MaybeUninit::uninit_array();
@@ -1729,7 +1729,7 @@
           let mut array = SOURCE!();
           unsafe { MaybeUninit::slice_assume_init_ref(&mut array)[0] }; // SINK
       }
-  FP:
+  NEG:
     source: |-
       {
           let mut array: [MaybeUninit<usize>; 3] = MaybeUninit::uninit_array();
@@ -1759,9 +1759,9 @@
     - Method core::num::nonzero::NonZero::unchecked_add
   type: |-
     NonZero<u32>
-  default: |-
+  value: |-
     NonZeroU32::new(1).unwrap()
-  TP:
+  POS:
     source: |-
       NonZeroU32::MAX
     code: |-
@@ -1772,7 +1772,7 @@
           let x = SOURCE!();
           unsafe { x.unchecked_add(1) }; // SINK
       }
-  FP:
+  NEG:
     source: |-
       NonZeroU32::new(1).unwrap()
     code: |-
@@ -1793,9 +1793,9 @@
     - Method core::num::nonzero::NonZero::unchecked_mul
   type: |-
     NonZero<u32>
-  default: |-
+  value: |-
     NonZeroU32::new(1).unwrap()
-  TP:
+  POS:
     source: |-
       NonZeroU32::MAX
     code: |-
@@ -1807,7 +1807,7 @@
           let two = NonZeroU32::new(2).unwrap();
           unsafe { x.unchecked_mul(two) }; // SINK
       }
-  FP:
+  NEG:
     source: |-
       NonZeroU32::new(1).unwrap()
     code: |-
@@ -1830,9 +1830,9 @@
     - Method core::str::traits::Range::get_unchecked
   type: |-
     Range<i32>
-  default: |-
+  value: |-
     0..2
-  TP:
+  POS:
     source: |-
       0..5
     code: |-
@@ -1844,7 +1844,7 @@
           let range = SOURCE!();
           unsafe { range.get_unchecked(ptr); } // SINK
       }
-  FP:
+  NEG:
     source: |-
       0..2
     code: |-
@@ -1866,9 +1866,9 @@
     - Method core::str::traits::Range::get_unchecked
   type: |-
     *const str
-  default: |-
+  value: |-
     x.as_str() as *const str
-  TP:
+  POS:
     source: |-
       {
           let ptr = x.as_str() as *const str;
@@ -1884,7 +1884,7 @@
           let range = 0..2;
           unsafe { range.get_unchecked(ptr); } // SINK
       }
-  FP:
+  NEG:
     source: |-
       x.as_str() as *const str
     code: |-
@@ -1906,9 +1906,9 @@
     - Method core::str::traits::Range::get_unchecked_mut
   type: |-
     Range<i32>
-  default: |-
+  value: |-
     0..2
-  TP:
+  POS:
     source: |-
       0..5
     code: |-
@@ -1920,7 +1920,7 @@
           let range = SOURCE!();
           unsafe { range.get_unchecked_mut(ptr); } // SINK
       }
-  FP:
+  NEG:
     source: |-
       0..2
     code: |-
@@ -1942,9 +1942,9 @@
     - Method core::str::traits::Range::get_unchecked_mut
   type: |-
     *mut str
-  default: |-
+  value: |-
     x.as_mut_str() as *mut str
-  TP:
+  POS:
     source: |-
       {
           let ptr = x.as_mut_str() as *mut str;
@@ -1960,7 +1960,7 @@
           let range = 0..2;
           unsafe { range.get_unchecked_mut(ptr); } // SINK
       }
-  FP:
+  NEG:
     source: |-
       x.as_mut_str() as *mut str
     code: |-
@@ -1984,9 +1984,9 @@
     - Method char::backward_unchecked
   type: |-
     char
-  default: |-
+  value: |-
     'A'
-  TP:
+  POS:
     source: |-
       '\u{10ffff}'
     code: |-
@@ -1997,7 +1997,7 @@
           let start: char = SOURCE!();
           unsafe { char::backward_unchecked(start, 1) }; // SINK
       }
-  FP:
+  NEG:
     source: |-
       'A'
     code: |-
@@ -2018,9 +2018,9 @@
     - Method char::forward_unchecked
   type: |-
     char
-  default: |-
+  value: |-
     'A'
-  TP:
+  POS:
     source: |-
       '\u{10ffff}'
     code: |-
@@ -2031,7 +2031,7 @@
           let start: char = SOURCE!();
           unsafe { char::forward_unchecked(start, 1) }; // SINK
       }
-  FP:
+  NEG:
     source: |-
       'A'
     code: |-
@@ -2053,9 +2053,9 @@
     - Method core::f32::to_int_unchecked
   type: |-
     f32
-  default: |-
+  value: |-
     3.14_f32
-  TP:
+  POS:
     source: |-
       f32::NAN
     code: |-
@@ -2064,7 +2064,7 @@
           let value = SOURCE!();
           unsafe { value.to_int_unchecked::<u32>() }; // SINK
       }
-  FP:
+  NEG:
     source: |-
       3.14_f32
     code: |-
@@ -2083,9 +2083,9 @@
     - Method core::f32::to_int_unchecked
   type: |-
     f32
-  default: |-
+  value: |-
     3.14_f32
-  TP:
+  POS:
     source: |-
       f32::INFINITY
     code: |-
@@ -2094,7 +2094,7 @@
           let value = SOURCE!();
           unsafe { value.to_int_unchecked::<u32>() }; // SINK
       }
-  FP:
+  NEG:
     source: |-
       3.14_f32
     code: |-
@@ -2113,9 +2113,9 @@
     - Method core::f32::to_int_unchecked
   type: |-
     f32
-  default: |-
+  value: |-
     3.14_f32
-  TP:
+  POS:
     source: |-
       f32::MAX
     code: |-
@@ -2124,7 +2124,7 @@
           let value = SOURCE!();
           unsafe { value.to_int_unchecked::<u32>() }; // SINK
       }
-  FP:
+  NEG:
     source: |-
       3.14_f32
     code: |-
@@ -2144,9 +2144,9 @@
     - Method core::ptr::const_ptr::add
   type: |-
     [i32; 3]
-  default: |-
+  value: |-
     [0_i32, 1_i32, 2_i32, 3_i32]
-  TP:
+  POS:
     source: |-
       [0_i32, 1_i32, 2_i32]
     code: |-
@@ -2155,7 +2155,7 @@
           let ptr = x.as_ptr();
           unsafe { *ptr.add(3); } // SINK
       }
-  FP:
+  NEG:
     source: |-
       [0_i32, 1_i32, 2_i32, 3_i32]
     code: |-
@@ -2174,9 +2174,9 @@
     - Method core::ptr::mut_ptr::as_mut
   type: |-
     *mut usize
-  default: |-
+  value: |-
     Box::into_raw(x)
-  TP:
+  POS:
     source: |-
       Box::into_raw(x)
     code: |-
@@ -2186,7 +2186,7 @@
           unsafe { Box::from_raw(ptr); }
           unsafe { ptr.as_mut(); } // SINK
       }
-  FP:
+  NEG:
     source: |-
       Box::into_raw(x)
     code: |-
@@ -2206,9 +2206,9 @@
     - Method core::ptr::mut_ptr::as_mut
   type: |-
     *mut usize
-  default: |-
+  value: |-
     Box::into_raw(x)
-  TP:
+  POS:
     source: |-
       Box::into_raw(x)
     code: |-
@@ -2220,7 +2220,7 @@
           assert_eq!(*ref1, *ref2);
           unsafe { Box::from_raw(ptr1); }
       }
-  FP:
+  NEG:
     source: |-
       Box::into_raw(x)
     code: |-
@@ -2242,9 +2242,9 @@
     - Method core::ptr::mut_ptr::as_ref
   type: |-
     *mut usize
-  default: |-
+  value: |-
     Box::into_raw(x)
-  TP:
+  POS:
     source: |-
       Box::into_raw(x)
     code: |-
@@ -2254,7 +2254,7 @@
           unsafe { Box::from_raw(ptr); }
           unsafe { ptr.as_ref(); } // SINK
       }
-  FP:
+  NEG:
     source: |-
       Box::into_raw(x)
     code: |-
@@ -2274,9 +2274,9 @@
     - Method core::ptr::mut_ptr::as_ref
   type: |-
     *mut usize
-  default: |-
+  value: |-
     Box::into_raw(x)
-  TP:
+  POS:
     source: |-
       Box::into_raw(x)
     code: |-
@@ -2288,7 +2288,7 @@
           assert_eq!(0, *ref1);
           unsafe { Box::from_raw(ptr1); }
       }
-  FP:
+  NEG:
     source: |-
       Box::into_raw(x)
     code: |-
@@ -2310,9 +2310,9 @@
     - Method core::ptr::mut_ptr::as_uninit_mut
   type: |-
     *mut usize
-  default: |-
+  value: |-
     Box::into_raw(x)
-  TP:
+  POS:
     source: |-
       Box::into_raw(x)
     code: |-
@@ -2323,7 +2323,7 @@
           unsafe { Box::from_raw(ptr); }
           unsafe { ptr.as_uninit_mut(); } // SINK
       }
-  FP:
+  NEG:
     source: |-
       Box::into_raw(x)
     code: |-
@@ -2344,9 +2344,9 @@
     - Method core::ptr::mut_ptr::as_uninit_mut
   type: |-
     *mut usize
-  default: |-
+  value: |-
     Box::into_raw(x)
-  TP:
+  POS:
     source: |-
       Box::into_raw(x)
     code: |-
@@ -2360,7 +2360,7 @@
           assert_eq!(*ref1, *ref2);
           unsafe { Box::from_raw(ptr1); }
       }
-  FP:
+  NEG:
     source: |-
       Box::into_raw(x)
     code: |-
@@ -2384,9 +2384,9 @@
     - Method core::ptr::mut_ptr::as_uninit_ref
   type: |-
     *mut usize
-  default: |-
+  value: |-
     Box::into_raw(x)
-  TP:
+  POS:
     source: |-
       Box::into_raw(x)
     code: |-
@@ -2397,7 +2397,7 @@
           unsafe { Box::from_raw(ptr); }
           unsafe { ptr.as_uninit_ref(); } // SINK
       }
-  FP:
+  NEG:
     source: |-
       Box::into_raw(x)
     code: |-
@@ -2418,9 +2418,9 @@
     - Method core::ptr::mut_ptr::as_uninit_ref
   type: |-
     *mut usize
-  default: |-
+  value: |-
     Box::into_raw(x)
-  TP:
+  POS:
     source: |-
       Box::into_raw(x)
     code: |-
@@ -2434,7 +2434,7 @@
           assert_eq!(1, *ref1);
           unsafe { Box::from_raw(ptr1); }
       }
-  FP:
+  NEG:
     source: |-
       Box::into_raw(x)
     code: |-
@@ -2458,9 +2458,9 @@
     - Method core::ptr::const_ptr::byte_add
   type: |-
     [i32; 3]
-  default: |-
+  value: |-
     [0_i32, 1_i32, 2_i32, 3_i32]
-  TP:
+  POS:
     source: |-
       [0_i32, 1_i32, 2_i32]
     code: |-
@@ -2469,7 +2469,7 @@
           let ptr = x.as_ptr();
           unsafe { *ptr.byte_add(12); } // SINK
       }
-  FP:
+  NEG:
     source: |-
       [0_i32, 1_i32, 2_i32, 3_i32]
     code: |-
@@ -2488,9 +2488,9 @@
     - Method core::ptr::const_ptr::byte_offset
   type: |-
     [i32; 3]
-  default: |-
+  value: |-
     [0_i32, 1_i32, 2_i32, 3_i32]
-  TP:
+  POS:
     source: |-
       [0_i32, 1_i32, 2_i32]
     code: |-
@@ -2499,7 +2499,7 @@
           let ptr = x.as_ptr();
           unsafe { *ptr.byte_offset(12); } // SINK
       }
-  FP:
+  NEG:
     source: |-
       [0_i32, 1_i32, 2_i32, 3_i32]
     code: |-
@@ -2518,9 +2518,9 @@
     - Method core::ptr::const_ptr::offset
   type: |-
     [i32; 3]
-  default: |-
+  value: |-
     [0_i32, 1_i32, 2_i32, 3_i32]
-  TP:
+  POS:
     source: |-
       [0_i32, 1_i32, 2_i32]
     code: |-
@@ -2529,7 +2529,7 @@
           let ptr = x.as_ptr();
           unsafe { *ptr.offset(3); } // SINK
       }
-  FP:
+  NEG:
     source: |-
       [0_i32, 1_i32, 2_i32, 3_i32]
     code: |-
@@ -2548,9 +2548,9 @@
     - Method core::ptr::mut_ptr::copy_from
   type: |-
     *mut Box<i32>
-  default: |-
+  value: |-
     &mut y as *mut Box<i32>
-  TP:
+  POS:
     source: |-
       &mut y as *mut Box<i32>
     code: |-
@@ -2563,7 +2563,7 @@
           let dst = SOURCE!();
           unsafe { dst.copy_from(src, 1); } // SINK
       }
-  FP:
+  NEG:
     source: |-
       &mut y as *mut Box<i32>
     code: |-
@@ -2587,9 +2587,9 @@
     - Method core::ptr::mut_ptr::copy_from_nonoverlapping
   type: |-
     *mut Box<i32>
-  default: |-
+  value: |-
     &mut y as *mut Box<i32>
-  TP:
+  POS:
     source: |-
       &mut y as *mut Box<i32>
     code: |-
@@ -2602,7 +2602,7 @@
           let dst = SOURCE!();
           unsafe { dst.copy_from_nonoverlapping(src, 1); } // SINK
       }
-  FP:
+  NEG:
     source: |-
       &mut y as *mut Box<i32>
     code: |-
@@ -2626,9 +2626,9 @@
     - Method core::ptr::mut_ptr::copy_to
   type: |-
     *mut Box<i32>
-  default: |-
+  value: |-
     &mut y as *mut Box<i32>
-  TP:
+  POS:
     source: |-
       &mut y as *mut Box<i32>
     code: |-
@@ -2641,7 +2641,7 @@
           let dst = SOURCE!();
           unsafe { src.copy_to(dst, 1); } // SINK
       }
-  FP:
+  NEG:
     source: |-
       &mut y as *mut Box<i32>
     code: |-
@@ -2665,9 +2665,9 @@
     - Method core::ptr::mut_ptr::copy_to_nonoverlapping
   type: |-
     *mut Box<i32>
-  default: |-
+  value: |-
     &mut y as *mut Box<i32>
-  TP:
+  POS:
     source: |-
       &mut y as *mut Box<i32>
     code: |-
@@ -2680,7 +2680,7 @@
           let dst = SOURCE!();
           unsafe { src.copy_to_nonoverlapping(dst, 1); } // SINK
       }
-  FP:
+  NEG:
     source: |-
       &mut y as *mut Box<i32>
     code: |-
@@ -2704,9 +2704,9 @@
     - Method core::ptr::mut_ptr::drop_in_place
   type: |-
     *mut Box<i32>
-  default: |-
+  value: |-
     &mut x as *mut Box<i32>
-  TP:
+  POS:
     source: |-
       &mut x as *mut Box<i32>
     code: |-
@@ -2719,7 +2719,7 @@
               ptr.drop_in_place(); // SINK
           }
       }
-  FP:
+  NEG:
     source: |-
       &mut x as *mut Box<i32>
     code: |-
@@ -2743,9 +2743,9 @@
     - Method core::ptr::const_ptr::read
   type: |-
     *const Box<i32>
-  default: |-
+  value: |-
     &x as *const Box<i32>
-  TP:
+  POS:
     source: |-
       {
           let x = Box::new(12);
@@ -2758,7 +2758,7 @@
           let src = SOURCE!();
           unsafe { forget(src.read()); } // SINK
       }
-  FP:
+  NEG:
     source: |-
       &x as *const Box<i32>
     code: |-
@@ -2778,9 +2778,9 @@
     - Method core::ptr::const_ptr::read
   type: |-
     *const Box<i32>
-  default: |-
+  value: |-
     &x as *const Box<i32>
-  TP:
+  POS:
     source: |-
       &x as *const Box<i32>
     code: |-
@@ -2790,7 +2790,7 @@
           let src = SOURCE!();
           unsafe { src.read(); } // SINK
       }
-  FP:
+  NEG:
     source: |-
       &x as *const Box<i32>
     code: |-
@@ -2811,9 +2811,9 @@
     - Method core::slice::as_chunks_unchecked
   type: |-
     &mut [usize]
-  default: |-
+  value: |-
     &mut y[..]
-  TP:
+  POS:
     source: |-
       &mut x[..]
     code: |-
@@ -2826,7 +2826,7 @@
               ptr.as_chunks_unchecked::<3>(); // SINK
           }
       }
-  FP:
+  NEG:
     source: |-
       &mut x[..]
     code: |-
@@ -2849,9 +2849,9 @@
     - Method core::slice::as_chunks_unchecked
   type: |-
     &mut [usize]
-  default: |-
+  value: |-
     &mut y[..]
-  TP:
+  POS:
     source: |-
       &mut x[..]
     code: |-
@@ -2864,7 +2864,7 @@
               ptr.as_chunks_unchecked::<0>(); // SINK
           }
       }
-  FP:
+  NEG:
     source: |-
       &mut x[..]
     code: |-
@@ -2887,9 +2887,9 @@
     - Method core::slice::as_chunks_unchecked_mut
   type: |-
     &mut [usize]
-  default: |-
+  value: |-
     &mut y[..]
-  TP:
+  POS:
     source: |-
       &mut x[..]
     code: |-
@@ -2902,7 +2902,7 @@
               ptr.as_chunks_unchecked_mut::<3>(); // SINK
           }
       }
-  FP:
+  NEG:
     source: |-
       &mut x[..]
     code: |-
@@ -2925,9 +2925,9 @@
     - Method core::slice::as_chunks_unchecked_mut
   type: |-
     &mut [usize]
-  default: |-
+  value: |-
     &mut y[..]
-  TP:
+  POS:
     source: |-
       &mut x[..]
     code: |-
@@ -2940,7 +2940,7 @@
               ptr.as_chunks_unchecked_mut::<0>(); // SINK
           }
       }
-  FP:
+  NEG:
     source: |-
       &mut x[..]
     code: |-
@@ -2964,9 +2964,9 @@
     - Method core::slice::raw::from_raw_parts
   type: |-
     *const usize
-  default: |-
+  value: |-
     y.as_ptr()
-  TP:
+  POS:
     source: |-
       x.as_ptr()
     code: |-
@@ -2979,7 +2979,7 @@
           drop(x); // SINK
           unsafe { slice::from_raw_parts(ptr, 2) };
       }
-  FP:
+  NEG:
     source: |-
       x.as_ptr()
     code: |-
@@ -3002,9 +3002,9 @@
     - Method core::slice::raw::from_raw_parts_mut
   type: |-
     *mut usize
-  default: |-
+  value: |-
     y.as_mut_ptr()
-  TP:
+  POS:
     source: |-
       x.as_mut_ptr()
     code: |-
@@ -3017,7 +3017,7 @@
           drop(x); // SINK
           unsafe { slice::from_raw_parts_mut(ptr, 2) };
       }
-  FP:
+  NEG:
     source: |-
       x.as_mut_ptr()
     code: |-
@@ -3040,9 +3040,9 @@
     - Method core::slice::raw::from_ptr_range
   type: |-
     Range<*const usize>
-  default: |-
+  value: |-
     y.as_ptr_range()
-  TP:
+  POS:
     source: |-
       x.as_ptr_range()
     code: |-
@@ -3056,7 +3056,7 @@
           drop(x); // SINK
           unsafe { slice::from_ptr_range(range) };
       }
-  FP:
+  NEG:
     source: |-
       x.as_ptr_range()
     code: |-
@@ -3080,9 +3080,9 @@
     - Method core::slice::raw::from_raw_parts_mut
   type: |-
     Range<*mut usize>
-  default: |-
+  value: |-
     y.as_mut_ptr_range()
-  TP:
+  POS:
     source: |-
       x.as_mut_ptr_range()
     code: |-
@@ -3096,7 +3096,7 @@
           drop(x); // SINK
           unsafe { slice::from_mut_ptr_range(range) };
       }
-  FP:
+  NEG:
     source: |-
       x.as_mut_ptr_range()
     code: |-
@@ -3123,13 +3123,13 @@
     - PS
   type: |-
     MaybeUninit<usize>
-  default: |-
+  value: |-
     {
         let mut x = MaybeUninit::<usize>::uninit();
         x.write(1);
         x
     }
-  TP:
+  POS:
     source: |-
       MaybeUninit::<usize>::uninit()
     code: |-
@@ -3144,7 +3144,7 @@
           None::<u8>.unwrap(); // SINK
           forget(y);
       }
-  FP:
+  NEG:
     source: |-
       MaybeUninit::<usize>::uninit()
     code: |-
@@ -3171,9 +3171,9 @@
     - PS
   type: |-
     ManuallyDrop<Box<usize>>
-  default: |-
+  value: |-
     ManuallyDrop::<Box<usize>>::new(Box::new(1))
-  TP:
+  POS:
     source: |-
       ManuallyDrop::<Box<usize>>::new(Box::new(1))
     code: |-
@@ -3187,7 +3187,7 @@
           None::<u8>.unwrap(); // SINK
           forget(x);
       }
-  FP:
+  NEG:
     source: |-
       ManuallyDrop::<Box<usize>>::new(Box::new(1))
     code: |-
@@ -3212,9 +3212,9 @@
     - PS
   type: |-
     *mut Box<i32>
-  default: |-
+  value: |-
     &mut y as *mut Box<i32>
-  TP:
+  POS:
     source: |-
       &mut y as *mut Box<i32>
     code: |-
@@ -3229,7 +3229,7 @@
           None::<u8>.unwrap(); // SINK
           forget(x);
       }
-  FP:
+  NEG:
     source: |-
       &mut y as *mut Box<i32>
     code: |-
@@ -3255,9 +3255,9 @@
     - PS
   type: |-
     *mut Box<i32>
-  default: |-
+  value: |-
     &mut y as *mut Box<i32>
-  TP:
+  POS:
     source: |-
       &mut y as *mut Box<i32>
     code: |-
@@ -3272,7 +3272,7 @@
           None::<u8>.unwrap(); // SINK
           forget(x);
       }
-  FP:
+  NEG:
     source: |-
       &mut y as *mut Box<i32>
     code: |-
@@ -3298,9 +3298,9 @@
     - PS
   type: |-
     *mut Box<i32>
-  default: |-
+  value: |-
     &mut y as *mut Box<i32>
-  TP:
+  POS:
     source: |-
       &mut y as *mut Box<i32>
     code: |-
@@ -3315,7 +3315,7 @@
           None::<u8>.unwrap(); // SINK
           forget(x);
       }
-  FP:
+  NEG:
     source: |-
       &mut y as *mut Box<i32>
     code: |-
@@ -3341,9 +3341,9 @@
     - PS
   type: |-
     *mut Box<i32>
-  default: |-
+  value: |-
     &mut y as *mut Box<i32>
-  TP:
+  POS:
     source: |-
       &mut y as *mut Box<i32>
     code: |-
@@ -3358,7 +3358,7 @@
           None::<u8>.unwrap(); // SINK
           forget(x);
       }
-  FP:
+  NEG:
     source: |-
       &mut y as *mut Box<i32>
     code: |-
@@ -3384,9 +3384,9 @@
     - PS
   type: |-
     *mut Box<i32>
-  default: |-
+  value: |-
     &mut x as *mut Box<i32>
-  TP:
+  POS:
     source: |-
       &mut x as *mut Box<i32>
     code: |-
@@ -3401,7 +3401,7 @@
           None::<u8>.unwrap(); // SINK
           forget(x);
       }
-  FP:
+  NEG:
     source: |-
       &mut x as *mut Box<i32>
     code: |-
@@ -3427,9 +3427,9 @@
     - PS
   type: |-
     *const Box<i32>
-  default: |-
+  value: |-
     &x as *const Box<i32>
-  TP:
+  POS:
     source: |-
       &x as *const Box<i32>
     code: |-
@@ -3441,7 +3441,7 @@
           None::<u8>.unwrap(); // SINK
           forget(x);
       }
-  FP:
+  NEG:
     source: |-
       &x as *const Box<i32>
     code: |-
