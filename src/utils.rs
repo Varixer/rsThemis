@@ -1,9 +1,15 @@
-use std::{ffi::OsStr, fs, os::unix::fs::PermissionsExt as _, path::Path, process::{Command, Output}};
+use std::{
+    ffi::OsStr,
+    fs,
+    io::Result,
+    os::unix::fs::PermissionsExt as _,
+    path::{Path, PathBuf},
+    process::{Command, Output},
+};
 
 use log::info;
 
-use crate::Res;
-
+use crate::{Program, Res};
 
 /// Usage: `cargo new --vcs none --edtion 2018 harness`
 pub(crate) fn generate_harness<P>(path: P)
@@ -46,10 +52,16 @@ pub(crate) fn evaluate([pos, neg]: [Output; 2]) -> Res {
     if pos.status.success() && neg.status.success() {
         match (pos.stdout.is_empty(), neg.stdout.is_empty()) {
             (false, true) => Res::Pass, // 通过
-            (false, false) => Res::FP, // 误报
-            _ => Res::FN, // 漏报
+            (false, false) => Res::FP,  // 误报
+            _ => Res::FN,               // 漏报
         }
     } else {
         Res::Err
     }
+}
+
+pub(crate) fn write(path: PathBuf, cases: &[Program; 2]) {
+    std::fs::create_dir_all(&path).expect(" std::fs::create_dir_all failed");
+    std::fs::write(path.join("POS.rs"), cases[0].merge()).expect("std::fs::write failed");
+    std::fs::write(path.join("NEG.rs"), cases[1].merge()).expect("std::fs::write failed");
 }

@@ -55,7 +55,7 @@ pub(crate) struct Testcase {
 }
 
 impl Testcase {
-    pub(crate) fn cases(&self, expr: Option<&String>) -> [Program; 2] {
+    pub(crate) fn cases(&self, expr: &String) -> [Program; 2] {
         let pos = Program::new(self.pos.nest(expr), "".to_string());
         let neg = Program::new(self.neg.nest(expr), "".to_string());
         [pos, neg]
@@ -71,11 +71,8 @@ pub(crate) struct Case {
 
 impl Case {
     /// Nest `expr` to `self.src`, and then nest `self.src` to `self.code`
-    pub(crate) fn nest(&self, expr: Option<&String>) -> String {
-        let source = match expr {
-            Some(e) => format!("{{\n{}\n}}", e.replace("SOURCE!()", &self.src)),
-            None => self.src.clone(),
-        };
+    pub(crate) fn nest(&self, expr: &String) -> String {
+        let source = format!("{{\n{}\n}}", expr.replace("SOURCE!()", &self.src));
         self.code.replace("SOURCE!()", source.trim())
     }
 }
@@ -116,6 +113,6 @@ mod test {
         "#,
         );
 
-        println!("{}", case.nest(Some(&expr)));
+        println!("{}", case.nest(&expr));
     }
 }

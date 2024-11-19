@@ -1,9 +1,13 @@
 mod config;
 mod utils;
 
-use std::{path::PathBuf, process::{Command, Output}};
+use std::{
+    path::PathBuf,
+    process::{Command, Output},
+};
 
 use config::Testcases;
+use log::info;
 
 pub struct Evaluator {
     executor: Executor,
@@ -12,27 +16,56 @@ pub struct Evaluator {
 }
 
 impl Evaluator {
-    pub fn new(tool: PathBuf, config: PathBuf, output: PathBuf) -> Self {
+    pub fn new(
+        tool: PathBuf,
+        config: PathBuf,
+        length: usize,
+        depth: usize,
+        output: PathBuf,
+    ) -> Self {
         utils::is_executable(&tool);
         let harness = output.join("harness");
         let output = output.join(tool.file_stem().unwrap());
         Evaluator {
             executor: Executor::new(tool, harness),
-            config: Config::new(config),
+            config: Config::new(config, length, depth),
             output,
         }
     }
 
     pub fn main(self) {
         let testcases = Testcases::from_file(&self.config.case);
-        for testcase in testcases[0..10].iter() {
-            let cases = testcase.cases(None);
-            let outputs =  cases.map(|c| self.executor.execute(c));
+        // for (idx, testcase) in testcases.iter().enumerate() {
+        for (idx, testcase) in testcases[0..10].iter().enumerate() {
+            // 输出目录
+            let output = self.output.join(format!("testcase-{:03}", idx));
+
+            // exprs 初始化
+            let mut exprs = Vec::new();
+            exprs.push(Expr::source());
+
+            let expr = &exprs[0];
+            let cases = testcase.cases(&expr.code);
+
+            info!(
+                "Write testcase-{:03} with expression-{} into file system",
+                idx, &expr.num
+            );
+            utils::write(output.join(&expr.num), &cases);
+            let outputs = cases.map(|c| self.executor.execute(c));
             let res = utils::evaluate(outputs);
-            println!("{:#?}\n{:?}\n=====================", testcase, res);  
+
+            if let Res::Pass = res {
+                // Todo
+                if expr.length < self.config.length && expr.depth < self.config.depth {
+                    // Todo: new_expr 加入到 exprs中
+
+                }
+            }
+            // Todo: 插入评估树
+            println!("{:?}", res);
         }
     }
-
 }
 
 pub(crate) struct Executor {
@@ -57,10 +90,42 @@ impl Executor {
 
 #[derive(Debug)]
 pub(crate) enum Res {
-    Err, // 工具执行出错
+    Err,  // 工具执行出错
     Pass, // 通过
-    FP, // 误报
-    FN, // 漏报
+    FP,   // 误报
+    FN,   // 漏报
+}
+
+pub(crate) struct Expr {
+    num: String,
+    code: String,
+    length: usize,
+    depth: usize,
+    metadata: String,
+}
+
+impl Expr {
+    pub(crate) fn new(
+        num: usize,
+        code: String,
+        length: usize,
+        depth: usize,
+        metadata: String,
+    ) -> Self {
+        let num = format!("{:04}-{}-{}", num, length, depth);
+        Expr {
+            num,
+            code,
+            length,
+            depth,
+            metadata,
+        }
+    }
+
+    /// SOURCE!()
+    pub(crate) fn source() -> Self {
+        Expr::new(0, String::from("SOURCE!()"), 0, 0, String::from(""))
+    }
 }
 
 pub(crate) struct Program {
@@ -70,10 +135,7 @@ pub(crate) struct Program {
 
 impl Program {
     pub(crate) fn new(code: String, metadata: String) -> Self {
-        Program {
-            code,
-            metadata,
-        }
+        Program { code, metadata }
     }
 
     /// Merge `metadata` and `code`
@@ -89,13 +151,17 @@ impl Program {
 pub(crate) struct Config {
     case: PathBuf,
     flow: PathBuf,
+    length: usize,
+    depth: usize,
 }
 
 impl Config {
-    pub(crate) fn new(config: PathBuf) -> Self {
+    pub(crate) fn new(config: PathBuf, length: usize, depth: usize) -> Self {
         Config {
             case: config.join("testcases.yaml"),
             flow: config.join("expressions.yaml"),
+            length,
+            depth,
         }
     }
 }
@@ -106,11 +172,19 @@ mod test {
 
     #[test]
     fn test_execute() {
-        let executor = Executor::new("../tools/eval_home/shell/Safedrop".into(), "./output/harness".into());
-        let program = Program::new(r#"fn main() {
+        let executor = Executor::new(
+            "../tools/eval_home/shell/Safedrop".into(),
+            "./output/harness".into(),
+        );
+        let program = Program::new(
+            r#"
+fn main() {
     println!("Hello, world!");
 }
-"#.to_string(), "".to_string());
+"#
+            .to_string(),
+            "".to_string(),
+        );
 
         let output = executor.execute(program);
         println!("{:#?}", output);
