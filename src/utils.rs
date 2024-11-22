@@ -1,7 +1,6 @@
 use std::{
     ffi::OsStr,
     fs,
-    io::Result,
     os::unix::fs::PermissionsExt as _,
     path::{Path, PathBuf},
     process::{Command, Output},

@@ -12,11 +12,11 @@ pub(crate) struct Cli {
     config: Option<PathBuf>,
 
     /// Expression nesting depth
-    #[arg(short, long, value_name = "NUM", default_value_t = 5)]
+    #[arg(short, long, value_name = "NUM", default_value_t = 3)]
     depth: usize,
 
     /// Expression sequence length
-    #[arg(short, long, value_name = "NUM", default_value_t = 5)]
+    #[arg(short, long, value_name = "NUM", default_value_t = 2)]
     length: usize,
 
     /// Output path

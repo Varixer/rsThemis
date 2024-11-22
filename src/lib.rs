@@ -1,13 +1,15 @@
 mod config;
 mod utils;
 
+use config::{Flows, Testcases};
+use log::info;
+use rand::Rng as _;
 use std::{
+    collections::VecDeque,
+    ops::{Deref, DerefMut},
     path::PathBuf,
     process::{Command, Output},
 };
-
-use config::Testcases;
-use log::info;
 
 pub struct Evaluator {
     executor: Executor,
@@ -35,35 +37,65 @@ impl Evaluator {
 
     pub fn main(self) {
         let testcases = Testcases::from_file(&self.config.case);
-        // for (idx, testcase) in testcases.iter().enumerate() {
-        for (idx, testcase) in testcases[0..10].iter().enumerate() {
-            // 输出目录
-            let output = self.output.join(format!("testcase-{:03}", idx));
+        let flows = Flows::from_file(&self.config.flow);
 
-            // exprs 初始化
-            let mut exprs = Vec::new();
-            exprs.push(Expr::source());
-
-            let expr = &exprs[0];
-            let cases = testcase.cases(&expr.code);
-
+        let process = |idx: usize, expr: &Expr, cases: [Program; 2]| -> Res {
+            // 写入文件
             info!(
                 "Write testcase-{:03} with expression-{} into file system",
                 idx, &expr.num
             );
-            utils::write(output.join(&expr.num), &cases);
+            utils::write(
+                self.output
+                    .join(format!("testcase-{:03}", idx))
+                    .join(&expr.num),
+                &cases,
+            );
+
+            // 执行评估
             let outputs = cases.map(|c| self.executor.execute(c));
-            let res = utils::evaluate(outputs);
+            utils::evaluate(outputs)
+        };
 
-            if let Res::Pass = res {
-                // Todo
-                if expr.length < self.config.length && expr.depth < self.config.depth {
-                    // Todo: new_expr 加入到 exprs中
+        // Todo: 取消注释
+        // for (idx, testcase) in testcases.iter().enumerate() {
+        for (idx, testcase) in testcases[0..1].iter().enumerate() {
+            // 评估 testcase
+            let src_expr = Expr::source();
+            let base_cases = testcase.cases(&src_expr.code);
+            let base_res = process(idx, &src_expr, base_cases);
 
+            // 评估嵌套 flow 后的 testcase
+            if let Res::Pass = base_res {
+                let mut count = 0; // Todo: 移除
+                // exprs 初始化
+                let mut exprs = Exprs::new();
+                exprs.push(Expr::source());
+
+                // sources 队列
+                let mut sources = VecDeque::new();
+                sources.push_back(Expr::source());
+                while !sources.is_empty() {
+                    let src = sources.pop_front().unwrap();
+                    for flow in flows.iter() {
+                        count += 1; // Todo: 移除
+                                    // Todo: 使用TreeNode.len() 替换 count
+                        let expr = flow.into_expr(count, &src, &exprs, testcase);
+                        let cases = testcase.cases(&expr.code);
+
+                        let res = process(idx, &expr, cases);
+
+                        // Todo: 插入评估树
+                        println!("src: {}, res: {:?}", src.num, res);
+                        if let Res::Pass = res {
+                            if expr.length < self.config.length && expr.depth < self.config.depth {
+                                sources.push_back(expr.clone());
+                                exprs.push(expr);
+                            }
+                        }
+                    }
                 }
             }
-            // Todo: 插入评估树
-            println!("{:?}", res);
         }
     }
 }
@@ -96,6 +128,40 @@ pub(crate) enum Res {
     FN,   // 漏报
 }
 
+pub(crate) struct Exprs(Vec<Expr>);
+
+impl Exprs {
+    pub(crate) fn new() -> Self {
+        Exprs(Vec::new())
+    }
+
+    /// 随机返回 `Exprs` 实例中一个 `Expr` 的共享引用
+    pub(crate) fn random_expr(&self) -> Option<&Expr> {
+        if self.0.is_empty() {
+            None // 如果没有任何元素，返回 None
+        } else {
+            let mut rng = rand::thread_rng();
+            let index = rng.gen_range(0..self.0.len()); // 随机生成索引
+            self.0.get(index) // 返回共享引用
+        }
+    }
+}
+
+impl Deref for Exprs {
+    type Target = Vec<Expr>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for Exprs {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+#[derive(Debug, Clone)]
 pub(crate) struct Expr {
     num: String,
     code: String,
@@ -125,6 +191,11 @@ impl Expr {
     /// SOURCE!()
     pub(crate) fn source() -> Self {
         Expr::new(0, String::from("SOURCE!()"), 0, 0, String::from(""))
+    }
+
+    /// SOURCE!() 替换
+    pub(crate) fn fill_source(&self, src: &String) -> String {
+        self.code.replace("SOURCE!()", src)
     }
 }
 
