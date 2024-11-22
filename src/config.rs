@@ -116,7 +116,7 @@ impl Flow {
     pub(crate) fn into_expr(&self, num: usize, src: &Expr, exprs: &Exprs, case: &Testcase) -> Expr {
         let mut code = self.code.replacen("SOURCE!()", &format!("{{\n{}\n}}", &src.code), 1); // SOURCE!() 替换
         code = code.replace("TYPE!()", &case.ty); // TYPE!() 替换
-        code = code.replace("VALUE!()", &case.val); // VALUE!() 替换
+        code = code.replace("VALUE!()", &format!("{{\n{}\n}}", case.val)); // VALUE!() 替换
         code = code.replace("COND!()", "true"); // COND!() 替换
         let length = src.length + 1;
         let mut depth = src.depth; // Todo: 根据 exprs 选取的变动

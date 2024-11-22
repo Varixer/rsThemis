@@ -1,7 +1,9 @@
 mod config;
+mod eval_tree;
 mod utils;
 
 use config::{Flows, Testcases};
+use eval_tree::{Node, Tree};
 use log::info;
 use rand::Rng as _;
 use std::{
@@ -59,15 +61,17 @@ impl Evaluator {
 
         // Todo: 取消注释
         // for (idx, testcase) in testcases.iter().enumerate() {
-        for (idx, testcase) in testcases[0..1].iter().enumerate() {
+        for (idx, testcase) in testcases.iter().enumerate() {
+            let mut eval_tree = Tree::new();
             // 评估 testcase
             let src_expr = Expr::source();
             let base_cases = testcase.cases(&src_expr.code);
             let base_res = process(idx, &src_expr, base_cases);
+            let root = Node::new(&src_expr.num, base_res);
+            eval_tree.set_root(root);
 
             // 评估嵌套 flow 后的 testcase
             if let Res::Pass = base_res {
-                let mut count = 0; // Todo: 移除
                 // exprs 初始化
                 let mut exprs = Exprs::new();
                 exprs.push(Expr::source());
@@ -78,15 +82,14 @@ impl Evaluator {
                 while !sources.is_empty() {
                     let src = sources.pop_front().unwrap();
                     for flow in flows.iter() {
-                        count += 1; // Todo: 移除
-                                    // Todo: 使用TreeNode.len() 替换 count
-                        let expr = flow.into_expr(count, &src, &exprs, testcase);
+                        let expr = flow.into_expr(eval_tree.count_nodes(), &src, &exprs, testcase);
                         let cases = testcase.cases(&expr.code);
 
                         let res = process(idx, &expr, cases);
 
                         // Todo: 插入评估树
-                        println!("src: {}, res: {:?}", src.num, res);
+                        eval_tree.add_child(&src.num, &expr.num, res).unwrap();
+                        // println!("src: {}, res: {:?}", src.num, res);
                         if let Res::Pass = res {
                             if expr.length < self.config.length && expr.depth < self.config.depth {
                                 sources.push_back(expr.clone());
@@ -96,6 +99,11 @@ impl Evaluator {
                     }
                 }
             }
+            utils::generate_image_from_dot(
+                &eval_tree.to_dot(),
+                self.output.join(format!("testcase-{:03}.png", idx)),
+            )
+            .unwrap();
         }
     }
 }
@@ -120,7 +128,7 @@ impl Executor {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub(crate) enum Res {
     Err,  // 工具执行出错
     Pass, // 通过
