@@ -1,6 +1,7 @@
 use std::{
     ffi::OsStr,
-    fs,
+    fs::{self, File},
+    io::{self, Write},
     os::unix::fs::PermissionsExt as _,
     path::{Path, PathBuf},
     process::{Command, Output},
@@ -8,7 +9,7 @@ use std::{
 
 use log::info;
 
-use crate::{Program, Res};
+use crate::{EvalResult, EvalSummary, Program};
 
 /// Usage: `cargo new --vcs none --edtion 2018 harness`
 pub(crate) fn generate_harness<P>(path: P)
@@ -47,22 +48,22 @@ where
 }
 
 /// Logical implementation of test case evaluation
-pub(crate) fn evaluate([pos, neg]: [Output; 2]) -> Res {
+pub(crate) fn evaluate((pos, neg): (Output, Output)) -> EvalResult {
     if pos.status.success() && neg.status.success() {
         match (pos.stdout.is_empty(), neg.stdout.is_empty()) {
-            (false, true) => Res::Pass, // 通过
-            (false, false) => Res::FP,  // 误报
-            _ => Res::FN,               // 漏报
+            (false, true) => EvalResult::Pass, // 通过
+            (false, false) => EvalResult::FP,  // 误报
+            _ => EvalResult::FN,               // 漏报
         }
     } else {
-        Res::Err
+        EvalResult::Err
     }
 }
 
-pub(crate) fn write(path: PathBuf, cases: &[Program; 2]) {
+pub(crate) fn write(path: PathBuf, (pos, neg): (&Program, &Program)) {
     std::fs::create_dir_all(&path).expect(" std::fs::create_dir_all failed");
-    std::fs::write(path.join("POS.rs"), cases[0].merge()).expect("std::fs::write failed");
-    std::fs::write(path.join("NEG.rs"), cases[1].merge()).expect("std::fs::write failed");
+    std::fs::write(path.join("POS.rs"), pos.merge()).expect("std::fs::write failed");
+    std::fs::write(path.join("NEG.rs"), neg.merge()).expect("std::fs::write failed");
 }
 
 /// 保存 DOT 内容并生成图片
@@ -73,7 +74,10 @@ pub(crate) fn write(path: PathBuf, cases: &[Program; 2]) {
 ///
 /// # Returns
 /// 如果成功生成图片，返回 `Ok(())`；否则返回错误信息。
-pub(crate) fn generate_image_from_dot(dot_content: &str, output_path: PathBuf) -> Result<(), String> {
+pub(crate) fn generate_image_from_dot(
+    dot_content: &str,
+    output_path: PathBuf,
+) -> Result<(), String> {
     // 创建临时 DOT 文件路径（同目录下，带 `.dot` 扩展名）
     let mut dot_path = output_path.clone();
     dot_path.set_extension("dot");
@@ -112,4 +116,22 @@ pub(crate) fn generate_image_from_dot(dot_content: &str, output_path: PathBuf) -
         }
         Err(e) => Err(format!("Failed to execute Graphviz: {}", e)),
     }
+}
+
+pub(crate) fn serialize_to_csv(summaries: &[EvalSummary], output_file: PathBuf) -> io::Result<()> {
+    // Open or create the output file
+    let file = File::create(output_file)?;
+
+    // Create a CSV writer
+    let mut writer = csv::Writer::from_writer(file);
+
+    // Serialize each `EvalSummary` to the CSV
+    for summary in summaries {
+        writer.serialize(summary)?;
+    }
+
+    // Ensure all data is written to the file
+    writer.flush()?;
+
+    Ok(())
 }

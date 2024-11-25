@@ -11,6 +11,10 @@ pub(crate) struct Cli {
     #[arg(short, long, value_name = "DIR")]
     config: Option<PathBuf>,
 
+    /// Indices of the testcases [default: ALL]
+    #[arg(short, long, value_parser, num_args=1..)]
+    indices: Vec<usize>,
+
     /// Expression nesting depth
     #[arg(short, long, value_name = "NUM", default_value_t = 3)]
     depth: usize,
@@ -29,6 +33,6 @@ impl Cli {
         let current_dir = std::env::current_dir().unwrap();
         let output = self.output.unwrap_or(current_dir.join("output"));
         let config = self.config.unwrap_or(current_dir.join("config"));
-        Evaluator::new(self.tool, config, self.length, self.depth,  output).main();
+        Evaluator::new(self.tool, config, self.indices, self.length, self.depth, output).main();
     }
 }

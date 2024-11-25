@@ -4,17 +4,17 @@ use std::{
     rc::Rc,
 };
 
-use crate::Res;
+use crate::EvalResult;
 
-pub(crate) struct Node {
+pub(crate) struct EvalNode {
     name: String,
-    res: Res,
-    children: Vec<Rc<RefCell<Node>>>,
+    res: EvalResult,
+    children: Vec<Rc<RefCell<EvalNode>>>,
 }
 
-impl Node {
+impl EvalNode {
     /// 创建新节点
-    pub(crate) fn new(name: &str, res: Res) -> Rc<RefCell<Self>> {
+    pub(crate) fn new(name: &str, res: EvalResult) -> Rc<RefCell<Self>> {
         Rc::new(RefCell::new(Self {
             name: name.to_string(),
             res,
@@ -29,10 +29,10 @@ impl Node {
 
         // 定义节点的颜色
         let color = match self.res {
-            Res::Err => "red",
-            Res::Pass => "green",
-            Res::FP => "blue",
-            Res::FN => "orange",
+            EvalResult::Err => "red",
+            EvalResult::Pass => "green",
+            EvalResult::FP => "blue",
+            EvalResult::FN => "orange",
         };
 
         // 添加当前节点
@@ -53,12 +53,12 @@ impl Node {
     }
 }
 
-pub(crate) struct Tree {
-    root: Option<Rc<RefCell<Node>>>,
-    node_map: HashMap<String, Rc<RefCell<Node>>>,
+pub(crate) struct EvalTree {
+    root: Option<Rc<RefCell<EvalNode>>>,
+    node_map: HashMap<String, Rc<RefCell<EvalNode>>>,
 }
 
-impl Tree {
+impl EvalTree {
     /// 创建空树
     pub(crate) fn new() -> Self {
         Self {
@@ -73,14 +73,14 @@ impl Tree {
     }
 
     /// 设置根节点
-    pub(crate) fn set_root(&mut self, root: Rc<RefCell<Node>>) {
+    pub(crate) fn set_root(&mut self, root: Rc<RefCell<EvalNode>>) {
         self.node_map
             .insert(root.borrow().name.clone(), Rc::clone(&root));
         self.root = Some(root);
     }
 
     /// 根据 name 查找节点
-    pub(crate) fn get_node(&self, name: &str) -> Option<Rc<RefCell<Node>>> {
+    pub(crate) fn get_node(&self, name: &str) -> Option<Rc<RefCell<EvalNode>>> {
         self.node_map.get(name).cloned()
     }
 
@@ -89,10 +89,10 @@ impl Tree {
         &mut self,
         parent_name: &str,
         child_name: &str,
-        child_res: Res,
+        child_res: EvalResult,
     ) -> Result<(), String> {
         if let Some(parent) = self.get_node(parent_name) {
-            let child = Node::new(child_name, child_res);
+            let child = EvalNode::new(child_name, child_res);
             parent.borrow_mut().children.push(Rc::clone(&child));
             self.node_map
                 .insert(child_name.to_string(), Rc::clone(&child));
@@ -103,7 +103,7 @@ impl Tree {
     }
 
     pub(crate) fn to_dot(&self) -> String {
-        let mut dot = String::from("digraph Tree {\n");
+        let mut dot = String::from("digraph EvalTree {\n");
         dot.push_str("node [shape=ellipse];\n"); // 设置全局节点格式
 
         if let Some(root) = &self.root {
@@ -122,15 +122,15 @@ mod test {
     #[test]
     fn test() {
         // 创建树并设置根节点
-        let mut tree = Tree::new();
-        let root = Node::new("Root", Res::Pass);
+        let mut tree = EvalTree::new();
+        let root = EvalNode::new("Root", EvalResult::Pass);
         tree.set_root(Rc::clone(&root));
 
         // 添加子节点
-        tree.add_child("Root", "Child1", Res::Err).unwrap();
-        tree.add_child("Root", "Child2", Res::FP).unwrap();
-        tree.add_child("Child1", "GrandChild1", Res::FN).unwrap();
-        tree.add_child("Child2", "GrandChild2", Res::Pass).unwrap();
+        tree.add_child("Root", "Child1", EvalResult::Err).unwrap();
+        tree.add_child("Root", "Child2", EvalResult::FP).unwrap();
+        tree.add_child("Child1", "GrandChild1", EvalResult::FN).unwrap();
+        tree.add_child("Child2", "GrandChild2", EvalResult::Pass).unwrap();
 
         // 生成 DOT 文件内容
         let dot_content = tree.to_dot();
@@ -146,7 +146,7 @@ mod test {
             .output()
             .expect("Failed to execute Graphviz");
         if output.status.success() {
-            println!("Tree image generated: tree.png");
+            println!("EvalTree image generated: tree.png");
         } else {
             eprintln!(
                 "Error generating image: {}",

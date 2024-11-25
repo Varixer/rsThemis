@@ -3,9 +3,10 @@ mod eval_tree;
 mod utils;
 
 use config::{Flows, Testcases};
-use eval_tree::{Node, Tree};
-use log::info;
+use eval_tree::{EvalNode, EvalTree};
+use log::{error, info};
 use rand::Rng as _;
+use serde::Serialize;
 use std::{
     collections::VecDeque,
     ops::{Deref, DerefMut},
@@ -16,6 +17,7 @@ use std::{
 pub struct Evaluator {
     executor: Executor,
     config: Config,
+    targets: Vec<usize>,
     output: PathBuf,
 }
 
@@ -23,6 +25,7 @@ impl Evaluator {
     pub fn new(
         tool: PathBuf,
         config: PathBuf,
+        targets: Vec<usize>,
         length: usize,
         depth: usize,
         output: PathBuf,
@@ -33,15 +36,40 @@ impl Evaluator {
         Evaluator {
             executor: Executor::new(tool, harness),
             config: Config::new(config, length, depth),
+            targets,
             output,
         }
     }
 
-    pub fn main(self) {
-        let testcases = Testcases::from_file(&self.config.case);
-        let flows = Flows::from_file(&self.config.flow);
+    pub fn main(&self) {
+        let targets = if self.targets.is_empty() {
+            &(0..self.config.testcases.len()).collect()
+        } else {
+            &self.targets
+        };
+        let mut summaries = Vec::new();
+        for idx in targets {
+            summaries.push(self.evaluate_one(*idx));
+        }
 
-        let process = |idx: usize, expr: &Expr, cases: [Program; 2]| -> Res {
+        utils::serialize_to_csv(&summaries, self.output.join("EvalSummary.csv")).unwrap();
+    }
+
+    pub(crate) fn evaluate_one(&self, idx: usize) -> EvalSummary {
+        if idx >= self.config.testcases.len() {
+            error!(
+                "Error: Index {} is out of bounds. Valid range is 0-{}",
+                idx,
+                self.config.testcases.len() - 1
+            );
+            std::process::exit(1);
+        } else {
+            self.evaluate(idx)
+        }
+    }
+
+    pub(crate) fn evaluate(&self, idx: usize) -> EvalSummary {
+        let process = |expr: &Expr, (pos, neg): (Program, Program)| -> EvalResult {
             // 写入文件
             info!(
                 "Write testcase-{:03} with expression-{} into file system",
@@ -51,60 +79,64 @@ impl Evaluator {
                 self.output
                     .join(format!("testcase-{:03}", idx))
                     .join(&expr.num),
-                &cases,
+                (&pos, &neg),
             );
 
             // 执行评估
-            let outputs = cases.map(|c| self.executor.execute(c));
+            let outputs = (self.executor.execute(pos), self.executor.execute(neg));
             utils::evaluate(outputs)
         };
 
-        // Todo: 取消注释
-        // for (idx, testcase) in testcases.iter().enumerate() {
-        for (idx, testcase) in testcases.iter().enumerate() {
-            let mut eval_tree = Tree::new();
-            // 评估 testcase
-            let src_expr = Expr::source();
-            let base_cases = testcase.cases(&src_expr.code);
-            let base_res = process(idx, &src_expr, base_cases);
-            let root = Node::new(&src_expr.num, base_res);
-            eval_tree.set_root(root);
+        // 获取要评估的 testcase
+        let testcase = &self.config.testcases[idx];
+        // 初始化 EvalSummary 和 Eval EvalTree
+        let mut summary = EvalSummary::new(idx);
+        let mut tree = EvalTree::new();
 
-            // 评估嵌套 flow 后的 testcase
-            if let Res::Pass = base_res {
-                // exprs 初始化
-                let mut exprs = Exprs::new();
-                exprs.push(Expr::source());
+        // 评估 testcase
+        let src_expr = Expr::source();
+        let programs = testcase.into_programs(&src_expr.code);
+        let res = process(&src_expr, programs);
+        summary.count(&res);
 
-                // sources 队列
-                let mut sources = VecDeque::new();
-                sources.push_back(Expr::source());
-                while !sources.is_empty() {
-                    let src = sources.pop_front().unwrap();
-                    for flow in flows.iter() {
-                        let expr = flow.into_expr(eval_tree.count_nodes(), &src, &exprs, testcase);
-                        let cases = testcase.cases(&expr.code);
+        // BFS 遍历所有可行的 flow 的组合方案
+        let root = EvalNode::new(&src_expr.num, res);
+        tree.set_root(root);
+        // 评估嵌套 flow 后的 testcase
+        if let EvalResult::Pass = res {
+            // exprs 初始化
+            let mut exprs = Exprs::new();
+            exprs.push(Expr::source());
 
-                        let res = process(idx, &expr, cases);
+            // sources 队列
+            let mut sources = VecDeque::new();
+            sources.push_back(Expr::source());
+            while !sources.is_empty() {
+                let src = sources.pop_front().unwrap();
+                for flow in self.config.flows.iter() {
+                    let expr = flow.into_expr(tree.count_nodes(), &src, &exprs, testcase);
+                    let programs = testcase.into_programs(&expr.code);
+                    let res = process(&expr, programs);
+                    summary.count(&res); // 统计
+                    tree.add_child(&src.num, &expr.num, res).unwrap(); // 插入评估树
 
-                        // Todo: 插入评估树
-                        eval_tree.add_child(&src.num, &expr.num, res).unwrap();
-                        // println!("src: {}, res: {:?}", src.num, res);
-                        if let Res::Pass = res {
-                            if expr.length < self.config.length && expr.depth < self.config.depth {
-                                sources.push_back(expr.clone());
-                                exprs.push(expr);
-                            }
+                    if let EvalResult::Pass = res {
+                        if expr.length < self.config.length && expr.depth < self.config.depth {
+                            sources.push_back(expr.clone());
+                            exprs.push(expr);
                         }
                     }
                 }
             }
-            utils::generate_image_from_dot(
-                &eval_tree.to_dot(),
-                self.output.join(format!("testcase-{:03}.png", idx)),
-            )
-            .unwrap();
         }
+        utils::generate_image_from_dot(
+            &tree.to_dot(),
+            self.output
+                .join(format!("testcase-{:03}", idx))
+                .join("evalTree.png"),
+        )
+        .unwrap();
+        return summary;
     }
 }
 
@@ -129,11 +161,58 @@ impl Executor {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub(crate) enum Res {
+pub(crate) enum EvalResult {
     Err,  // 工具执行出错
     Pass, // 通过
     FP,   // 误报
     FN,   // 漏报
+}
+
+
+#[derive(Serialize)]
+pub(crate) struct EvalSummary {
+    #[serde(rename = "编号", serialize_with = "EvalSummary::format_with_leading_zeros")]
+    idx: usize,
+    #[serde(rename = "通过")]
+    pass_count: usize,
+    #[serde(rename = "误报")]
+    fp_count: usize,
+    #[serde(rename = "漏报")]
+    fn_count: usize,
+    #[serde(rename = "错误")]
+    err_count: usize,
+}
+
+impl EvalSummary {
+    /// Init Eval Summary (All are 0)
+    pub(crate) fn new(idx: usize) -> Self {
+        EvalSummary {
+            idx,
+            pass_count: 0,
+            fp_count: 0,
+            fn_count: 0,
+            err_count: 0,
+        }
+    }
+
+    /// Count based on res enumeration
+    pub(crate) fn count(&mut self, res: &EvalResult) {
+        match res {
+            EvalResult::Err => self.err_count += 1,
+            EvalResult::Pass => self.pass_count += 1,
+            EvalResult::FP => self.fp_count += 1,
+            EvalResult::FN => self.fn_count += 1,
+        }
+    }
+
+    // Custom function to serialize numbers with leading zeros
+    pub(crate) fn format_with_leading_zeros<S>(num: &usize, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let formatted = format!("{:03}", num); // Format number with leading zeros, width = 3
+        serializer.serialize_str(&formatted)
+    }
 }
 
 pub(crate) struct Exprs(Vec<Expr>);
@@ -228,17 +307,19 @@ impl Program {
 }
 
 pub(crate) struct Config {
-    case: PathBuf,
-    flow: PathBuf,
+    testcases: Testcases,
+    flows: Flows,
     length: usize,
     depth: usize,
 }
 
 impl Config {
     pub(crate) fn new(config: PathBuf, length: usize, depth: usize) -> Self {
+        let testcases = Testcases::from_file(config.join("testcases.yaml"));
+        let flows = Flows::from_file(config.join("expressions.yaml"));
         Config {
-            case: config.join("testcases.yaml"),
-            flow: config.join("expressions.yaml"),
+            testcases,
+            flows,
             length,
             depth,
         }

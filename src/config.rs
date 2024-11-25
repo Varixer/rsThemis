@@ -56,10 +56,10 @@ pub(crate) struct Testcase {
 }
 
 impl Testcase {
-    pub(crate) fn cases(&self, expr: &String) -> [Program; 2] {
+    pub(crate) fn into_programs(&self, expr: &String) -> (Program, Program) {
         let pos = Program::new(self.pos.nest(expr), "".to_string());
         let neg = Program::new(self.neg.nest(expr), "".to_string());
-        [pos, neg]
+        (pos, neg)
     }
 }
 
