@@ -391,7 +391,7 @@
   features:
     - Function std::collections::hash::map::HashMap::get_many_unchecked_mut
   type: |-
-    [&str; 2]
+    [&'static str; 2]
   value: |-
     ["111", "111"]
   POS:
@@ -439,9 +439,9 @@
     Box<std::mem::MaybeUninit<usize>>
   value: |-
     {
-        let mut x = Box::<usize>::new_uninit();
-        unsafe { x.as_mut_ptr().write(5) };
-        x
+        let mut z = Box::<usize>::new_uninit();
+        unsafe { z.as_mut_ptr().write(5) };
+        z
     }
   POS:
     source: |-
@@ -475,10 +475,10 @@
   type: |-
     Box<dyn std::any::Any>
   value: |-
-    Box::new(0_usize)
+    Box::new(0_usize) as Box<dyn std::any::Any>
   POS:
     source: |-
-      Box::new(0_usize)
+      Box::new(0_usize) as Box<dyn std::any::Any>
     code: |-
       #![feature(downcast_unchecked)]
       use std::num::NonZeroUsize;
@@ -490,7 +490,7 @@
       }
   NEG:
     source: |-
-      Box::new(0_usize)
+      Box::new(0_usize) as Box<dyn std::any::Any>
     code: |-
       #![feature(downcast_unchecked)]
       fn main() {
@@ -622,8 +622,8 @@
     *const usize
   value: |-
     {
-        let x = Rc::new(5usize);
-        let ptr = Rc::into_raw(x);
+        let z = Rc::new(5usize);
+        let ptr = Rc::into_raw(z);
         unsafe {
             Rc::increment_strong_count(ptr);
         }
@@ -663,9 +663,10 @@
   features:
     - Method std::rc::Rc::get_mut_unchecked
   type: |-
-    Rc<&str>
+    Rc<&'static str>
   value: |-
-    x.clone().into();
+    let z: Rc<&str> = Rc::new("Hello, world!");
+    z.clone().into()
   POS:
     source: |-
       x.clone().into()
@@ -711,7 +712,8 @@
   type: |-
     *const usize
   value: |-
-    Rc::into_raw(y)
+    let z = Rc::new(5usize);
+    Rc::into_raw(z)
   POS:
     source: |-
       {
@@ -926,12 +928,12 @@
   features:
     - Method core::array::iter::IntoIter::new_unchecked
   type: |-
-    Range<usize>
+    std::ops::Range<usize>
   value: |-
-    0..2
+    0..2usize
   POS:
     source: |-
-      0..5
+      0..5usize
     code: |-
       #![feature(array_value_iter)]
       #![feature(array_into_iter_constructors)]
@@ -949,7 +951,7 @@
       }
   NEG:
     source: |-
-      0..2
+      0..2usize
     code: |-
       #![feature(array_value_iter)]
       #![feature(array_into_iter_constructors)]
@@ -1043,7 +1045,7 @@
   features:
     - Method core::ffi::c_str::CStr::from_bytes_with_nul_unchecked
   type: |-
-    &[u8]
+    &'static [u8]
   value: |-
     b"hello\0"
   POS:
@@ -1075,7 +1077,7 @@
   features:
     - Method core::ffi::c_str::CStr::from_bytes_with_nul_unchecked
   type: |-
-    &[u8]
+    &'static [u8]
   value: |-
     b"hello\0"
   POS:
@@ -1291,9 +1293,9 @@
     [MaybeUninit<i32>; 3]
   value: |-
     {
-        let mut array: [MaybeUninit<i32>; 3] = MaybeUninit::uninit_array();
-        array[0].write(0);
-        array
+        let mut z: [MaybeUninit<i32>; 3] = MaybeUninit::uninit_array();
+        z[0].write(0);
+        z
     }
   POS:
     source: |-
@@ -1343,9 +1345,9 @@
     MaybeUninit<usize>
   value: |-
     {
-        let mut x = MaybeUninit::<usize>::uninit();
-        x.write(1);
-        x
+        let mut z = MaybeUninit::<usize>::uninit();
+        z.write(1);
+        z
     }
   POS:
     source: |-
@@ -1385,9 +1387,9 @@
     MaybeUninit<Box<usize>>
   value: |-
     {
-        let mut x = MaybeUninit::<Box<usize>>::uninit();
-        x.write(Box::new(1));
-        x
+        let mut z = MaybeUninit::<Box<usize>>::uninit();
+        z.write(Box::new(1));
+        z
     }
   POS:
     source: |-
@@ -1424,7 +1426,7 @@
   features:
     - Method core::mem::maybe_uninit::MaybeUninit::assume_init_drop
   type: |-
-    ManuallyDrop<Box<usize>>
+    MaybeUninit<Box<usize>>
   value: |-
     MaybeUninit::<Box<usize>>::uninit()
   POS:
@@ -1468,9 +1470,9 @@
     MaybeUninit<Cell<bool>>
   value: |-
     {
-        let mut x = MaybeUninit::<Cell<bool>>::uninit();
-        x.write(Cell::new(true));
-        x
+        let mut z = MaybeUninit::<Cell<bool>>::uninit();
+        z.write(Cell::new(true));
+        z
     }
   POS:
     source: |-
@@ -1512,9 +1514,9 @@
     MaybeUninit<usize>
   value: |-
     {
-        let mut x = MaybeUninit::<usize>::uninit();
-        x.write(0);
-        x
+        let mut z = MaybeUninit::<usize>::uninit();
+        z.write(0);
+        z
     }
   POS:
     source: |-
@@ -1556,9 +1558,9 @@
     MaybeUninit<Box<usize>>
   value: |-
     {
-        let mut x = MaybeUninit::<Box<usize>>::uninit();
-        x.write(Box::new(0));
-        x
+        let mut z = MaybeUninit::<Box<usize>>::uninit();
+        z.write(Box::new(0));
+        z
     }
   POS:
     source: |-
@@ -1605,9 +1607,9 @@
     MaybeUninit<Vec<usize>>
   value: |-
     {
-        let mut x = MaybeUninit::<Vec<usize>>::uninit();
-        x.write(vec![0]);
-        x
+        let mut z = MaybeUninit::<Vec<usize>>::uninit();
+        z.write(vec![0]);
+        z
     }
   POS:
     source: |-
@@ -1758,7 +1760,7 @@
   features:
     - Method core::num::nonzero::NonZero::unchecked_add
   type: |-
-    NonZero<u32>
+    NonZeroU32
   value: |-
     NonZeroU32::new(1).unwrap()
   POS:
@@ -1792,7 +1794,7 @@
   features:
     - Method core::num::nonzero::NonZero::unchecked_mul
   type: |-
-    NonZero<u32>
+    NonZeroU32
   value: |-
     NonZeroU32::new(1).unwrap()
   POS:
@@ -1829,12 +1831,12 @@
   features:
     - Method core::str::traits::Range::get_unchecked
   type: |-
-    Range<i32>
+    std::ops::Range<usize>
   value: |-
-    0..2
+    0..2usize
   POS:
     source: |-
-      0..5
+      0..5usize
     code: |-
       #![feature(slice_index_methods)]
       use std::slice::SliceIndex;
@@ -1846,7 +1848,7 @@
       }
   NEG:
     source: |-
-      0..2
+      0..2usize
     code: |-
       #![feature(slice_index_methods)]
       use std::slice::SliceIndex;
@@ -1867,7 +1869,8 @@
   type: |-
     *const str
   value: |-
-    x.as_str() as *const str
+    let z = String::from("111");
+    z.as_str() as *const str
   POS:
     source: |-
       {
@@ -1882,7 +1885,7 @@
           let x = String::from("111");
           let ptr = SOURCE!();
           let range = 0..2;
-          unsafe { range.get_unchecked(ptr); } // SINK
+          unsafe { range.get_unchecked(ptr).as_ref(); } // SINK
       }
   NEG:
     source: |-
@@ -1894,7 +1897,7 @@
           let x = String::from("111");
           let ptr = SOURCE!();
           let range = 0..2;
-          unsafe { range.get_unchecked(ptr); }
+          unsafe { range.get_unchecked(ptr).as_ref(); }
       }
 
 - description: Dangling pointer access - BO - Calling this method with an out-of-bounds index is undefined behavior
@@ -1905,12 +1908,12 @@
   features:
     - Method core::str::traits::Range::get_unchecked_mut
   type: |-
-    Range<i32>
+    std::ops::Range<usize>
   value: |-
-    0..2
+    0..2usize
   POS:
     source: |-
-      0..5
+      0..5usize
     code: |-
       #![feature(slice_index_methods)]
       use std::slice::SliceIndex;
@@ -1918,11 +1921,11 @@
           let mut x = String::from("111");
           let ptr = x.as_mut_str() as *mut str;
           let range = SOURCE!();
-          unsafe { range.get_unchecked_mut(ptr); } // SINK
+          unsafe { range.get_unchecked_mut(ptr).as_ref(); } // SINK
       }
   NEG:
     source: |-
-      0..2
+      0..2usize
     code: |-
       #![feature(slice_index_methods)]
       use std::slice::SliceIndex;
@@ -1930,7 +1933,7 @@
           let mut x = String::from("111");
           let ptr = x.as_mut_str() as *mut str;
           let range = SOURCE!();
-          unsafe { range.get_unchecked_mut(ptr); }
+          unsafe { range.get_unchecked_mut(ptr).as_ref(); }
       }
 
 - description: Dangling pointer access - UAF - Calling this method with a dangling slice pointer is undefined behavior
@@ -1943,7 +1946,8 @@
   type: |-
     *mut str
   value: |-
-    x.as_mut_str() as *mut str
+    let mut z = String::from("111");
+    z.as_mut_str() as *mut str
   POS:
     source: |-
       {
@@ -1958,7 +1962,7 @@
           let mut x = String::from("111");
           let ptr = SOURCE!();
           let range = 0..2;
-          unsafe { range.get_unchecked_mut(ptr); } // SINK
+          unsafe { range.get_unchecked_mut(ptr).as_ref(); } // SINK
       }
   NEG:
     source: |-
@@ -1970,7 +1974,7 @@
           let mut x = String::from("111");
           let ptr = SOURCE!();
           let range = 0..2;
-          unsafe { range.get_unchecked_mut(ptr); }
+          unsafe { range.get_unchecked_mut(ptr).as_ref(); }
       }
 
 ## Primitive
@@ -1988,7 +1992,7 @@
     'A'
   POS:
     source: |-
-      '\u{10ffff}'
+      '\u{000000}'
     code: |-
       #![feature(step_trait)]
       #![feature(unchecked_math)]
@@ -2145,7 +2149,7 @@
   type: |-
     [i32; 3]
   value: |-
-    [0_i32, 1_i32, 2_i32, 3_i32]
+    [0_i32, 1_i32, 2_i32]
   POS:
     source: |-
       [0_i32, 1_i32, 2_i32]
@@ -2157,12 +2161,12 @@
       }
   NEG:
     source: |-
-      [0_i32, 1_i32, 2_i32, 3_i32]
+      [0_i32, 1_i32, 2_i32]
     code: |-
       fn main() {
           let x = SOURCE!();
           let ptr = x.as_ptr();
-          unsafe { *ptr.add(3); }
+          unsafe { *ptr.add(2); }
       }
 
 - description: Dangling pointer access - UAF
@@ -2175,7 +2179,8 @@
   type: |-
     *mut usize
   value: |-
-    Box::into_raw(x)
+    let z = Box::new(0usize);
+    Box::into_raw(z)
   POS:
     source: |-
       Box::into_raw(x)
@@ -2207,7 +2212,8 @@
   type: |-
     *mut usize
   value: |-
-    Box::into_raw(x)
+    let z = Box::new(0usize);
+    Box::into_raw(z)
   POS:
     source: |-
       Box::into_raw(x)
@@ -2243,7 +2249,8 @@
   type: |-
     *mut usize
   value: |-
-    Box::into_raw(x)
+    let z = Box::new(0usize);
+    Box::into_raw(z)
   POS:
     source: |-
       Box::into_raw(x)
@@ -2275,7 +2282,8 @@
   type: |-
     *mut usize
   value: |-
-    Box::into_raw(x)
+    let z = Box::new(0usize);
+    Box::into_raw(z)
   POS:
     source: |-
       Box::into_raw(x)
@@ -2311,7 +2319,8 @@
   type: |-
     *mut usize
   value: |-
-    Box::into_raw(x)
+    let z = Box::new(0usize);
+    Box::into_raw(z)
   POS:
     source: |-
       Box::into_raw(x)
@@ -2345,7 +2354,8 @@
   type: |-
     *mut usize
   value: |-
-    Box::into_raw(x)
+    let z = Box::new(0usize);
+    Box::into_raw(z)
   POS:
     source: |-
       Box::into_raw(x)
@@ -2385,7 +2395,8 @@
   type: |-
     *mut usize
   value: |-
-    Box::into_raw(x)
+    let z = Box::new(0usize);
+    Box::into_raw(z)
   POS:
     source: |-
       Box::into_raw(x)
@@ -2419,7 +2430,8 @@
   type: |-
     *mut usize
   value: |-
-    Box::into_raw(x)
+    let z = Box::new(0usize);
+    Box::into_raw(z)
   POS:
     source: |-
       Box::into_raw(x)
@@ -2459,7 +2471,7 @@
   type: |-
     [i32; 3]
   value: |-
-    [0_i32, 1_i32, 2_i32, 3_i32]
+    [0_i32, 1_i32, 2_i32]
   POS:
     source: |-
       [0_i32, 1_i32, 2_i32]
@@ -2471,12 +2483,12 @@
       }
   NEG:
     source: |-
-      [0_i32, 1_i32, 2_i32, 3_i32]
+      [0_i32, 1_i32, 2_i32]
     code: |-
       fn main() {
           let x = SOURCE!();
           let ptr = x.as_ptr();
-          unsafe { *ptr.byte_add(12); }
+          unsafe { *ptr.byte_add(8); }
       }
 
 - description: Dangling pointer access - BO
@@ -2489,7 +2501,7 @@
   type: |-
     [i32; 3]
   value: |-
-    [0_i32, 1_i32, 2_i32, 3_i32]
+    [0_i32, 1_i32, 2_i32]
   POS:
     source: |-
       [0_i32, 1_i32, 2_i32]
@@ -2501,12 +2513,12 @@
       }
   NEG:
     source: |-
-      [0_i32, 1_i32, 2_i32, 3_i32]
+      [0_i32, 1_i32, 2_i32]
     code: |-
       fn main() {
           let x = SOURCE!();
           let ptr = x.as_ptr();
-          unsafe { *ptr.byte_offset(12); }
+          unsafe { *ptr.byte_offset(8); }
       }
 
 - description: Dangling pointer access - BO
@@ -2519,7 +2531,7 @@
   type: |-
     [i32; 3]
   value: |-
-    [0_i32, 1_i32, 2_i32, 3_i32]
+    [0_i32, 1_i32, 2_i32]
   POS:
     source: |-
       [0_i32, 1_i32, 2_i32]
@@ -2531,12 +2543,12 @@
       }
   NEG:
     source: |-
-      [0_i32, 1_i32, 2_i32, 3_i32]
+      [0_i32, 1_i32, 2_i32]
     code: |-
       fn main() {
           let x = SOURCE!();
           let ptr = x.as_ptr();
-          unsafe { *ptr.offset(3); }
+          unsafe { *ptr.offset(2); }
       }
 
 - description: Dangling pointer access - DF
@@ -2549,7 +2561,8 @@
   type: |-
     *mut Box<i32>
   value: |-
-    &mut y as *mut Box<i32>
+    let mut z = Box::new(0);
+    &mut z as *mut Box<i32>
   POS:
     source: |-
       &mut y as *mut Box<i32>
@@ -2588,7 +2601,8 @@
   type: |-
     *mut Box<i32>
   value: |-
-    &mut y as *mut Box<i32>
+    let mut z = Box::new(0);
+    &mut z as *mut Box<i32>
   POS:
     source: |-
       &mut y as *mut Box<i32>
@@ -2627,7 +2641,8 @@
   type: |-
     *mut Box<i32>
   value: |-
-    &mut y as *mut Box<i32>
+    let mut z = Box::new(0);
+    &mut z as *mut Box<i32>
   POS:
     source: |-
       &mut y as *mut Box<i32>
@@ -2666,7 +2681,8 @@
   type: |-
     *mut Box<i32>
   value: |-
-    &mut y as *mut Box<i32>
+    let mut z = Box::new(0);
+    &mut z as *mut Box<i32>
   POS:
     source: |-
       &mut y as *mut Box<i32>
@@ -2705,7 +2721,8 @@
   type: |-
     *mut Box<i32>
   value: |-
-    &mut x as *mut Box<i32>
+    let mut z = Box::new(12);
+    &mut z as *mut Box<i32>
   POS:
     source: |-
       &mut x as *mut Box<i32>
@@ -2744,7 +2761,8 @@
   type: |-
     *const Box<i32>
   value: |-
-    &x as *const Box<i32>
+    let z = Box::new(12);
+    &z as *const Box<i32>
   POS:
     source: |-
       {
@@ -2779,7 +2797,8 @@
   type: |-
     *const Box<i32>
   value: |-
-    &x as *const Box<i32>
+    let z = Box::new(12);
+    &z as *const Box<i32>
   POS:
     source: |-
       &x as *const Box<i32>
@@ -2810,17 +2829,17 @@
   features:
     - Method core::slice::as_chunks_unchecked
   type: |-
-    &mut [usize]
+    &'static mut [usize]
   value: |-
-    &mut y[..]
+    unsafe { &mut Z[..] }
   POS:
     source: |-
-      &mut x[..]
+      unsafe { &mut X[..] }
     code: |-
       #![feature(slice_as_chunks)]
+      static mut Z: [usize; 12] = [1usize; 12];
+      static mut X: [usize; 16] = [1usize; 16];
       fn main() {
-          let mut x = vec![1usize; 16];
-          let mut y = vec![1usize; 12];
           let ptr = SOURCE!();
           unsafe {
               ptr.as_chunks_unchecked::<3>(); // SINK
@@ -2828,12 +2847,13 @@
       }
   NEG:
     source: |-
-      &mut x[..]
+      unsafe { &mut X[..] }
     code: |-
       #![feature(slice_as_chunks)]
+      static mut Z: [usize; 12] = [1usize; 12];
+      static mut X: [usize; 16] = [1usize; 16];
       fn main() {
           let mut x = vec![1usize; 16];
-          let mut y = vec![1usize; 12];
           let ptr = SOURCE!();
           unsafe {
               ptr.as_chunks_unchecked::<2>();
@@ -2848,17 +2868,18 @@
   features:
     - Method core::slice::as_chunks_unchecked
   type: |-
-    &mut [usize]
+    &'static mut [usize]
   value: |-
-    &mut y[..]
+    unsafe { &mut Z[..] }
   POS:
     source: |-
-      &mut x[..]
+      unsafe { &mut X[..] }
     code: |-
       #![feature(slice_as_chunks)]
+      static mut Z: [usize; 12] = [1usize; 12];
+      static mut X: [usize; 16] = [1usize; 16];
       fn main() {
           let mut x = vec![1usize; 16];
-          let mut y = vec![1usize; 12];
           let ptr = SOURCE!();
           unsafe {
               ptr.as_chunks_unchecked::<0>(); // SINK
@@ -2866,12 +2887,13 @@
       }
   NEG:
     source: |-
-      &mut x[..]
+      unsafe { &mut X[..] }
     code: |-
       #![feature(slice_as_chunks)]
+      static mut Z: [usize; 12] = [1usize; 12];
+      static mut X: [usize; 16] = [1usize; 16];
       fn main() {
           let mut x = vec![1usize; 16];
-          let mut y = vec![1usize; 12];
           let ptr = SOURCE!();
           unsafe {
               ptr.as_chunks_unchecked::<2>();
@@ -2886,17 +2908,18 @@
   features:
     - Method core::slice::as_chunks_unchecked_mut
   type: |-
-    &mut [usize]
+    &'static mut [usize]
   value: |-
-    &mut y[..]
+    unsafe { &mut Z[..] }
   POS:
     source: |-
-      &mut x[..]
+      unsafe { &mut X[..] }
     code: |-
       #![feature(slice_as_chunks)]
+      static mut Z: [usize; 12] = [1usize; 12];
+      static mut X: [usize; 16] = [1usize; 16];
       fn main() {
           let mut x = vec![1usize; 16];
-          let mut y = vec![1usize; 12];
           let ptr = SOURCE!();
           unsafe {
               ptr.as_chunks_unchecked_mut::<3>(); // SINK
@@ -2904,12 +2927,13 @@
       }
   NEG:
     source: |-
-      &mut x[..]
+      unsafe { &mut X[..] }
     code: |-
       #![feature(slice_as_chunks)]
+      static mut Z: [usize; 12] = [1usize; 12];
+      static mut X: [usize; 16] = [1usize; 16];
       fn main() {
           let mut x = vec![1usize; 16];
-          let mut y = vec![1usize; 12];
           let ptr = SOURCE!();
           unsafe {
               ptr.as_chunks_unchecked_mut::<2>();
@@ -2924,17 +2948,18 @@
   features:
     - Method core::slice::as_chunks_unchecked_mut
   type: |-
-    &mut [usize]
+    &'static mut [usize]
   value: |-
-    &mut y[..]
+    unsafe { &mut Z[..] }
   POS:
     source: |-
-      &mut x[..]
+      unsafe { &mut X[..] }
     code: |-
       #![feature(slice_as_chunks)]
+      static mut Z: [usize; 12] = [1usize; 12];
+      static mut X: [usize; 16] = [1usize; 16];
       fn main() {
           let mut x = vec![1usize; 16];
-          let mut y = vec![1usize; 12];
           let ptr = SOURCE!();
           unsafe {
               ptr.as_chunks_unchecked_mut::<0>(); // SINK
@@ -2942,12 +2967,13 @@
       }
   NEG:
     source: |-
-      &mut x[..]
+      unsafe { &mut X[..] }
     code: |-
       #![feature(slice_as_chunks)]
+      static mut Z: [usize; 12] = [1usize; 12];
+      static mut X: [usize; 16] = [1usize; 16];
       fn main() {
           let mut x = vec![1usize; 16];
-          let mut y = vec![1usize; 12];
           let ptr = SOURCE!();
           unsafe {
               ptr.as_chunks_unchecked_mut::<2>();
@@ -2965,7 +2991,8 @@
   type: |-
     *const usize
   value: |-
-    y.as_ptr()
+    let z = Vec::from([1usize; 2]);
+    z.as_ptr()
   POS:
     source: |-
       x.as_ptr()
@@ -2974,7 +3001,6 @@
 
       fn main() {
           let x = Vec::from([1usize; 2]);
-          let y = Vec::from([1usize; 2]);
           let ptr = SOURCE!();
           drop(x); // SINK
           unsafe { slice::from_raw_parts(ptr, 2) };
@@ -2987,7 +3013,6 @@
 
       fn main() {
           let x = Vec::from([1usize; 2]);
-          let y = Vec::from([1usize; 2]);
           let ptr = SOURCE!();
           
           unsafe { slice::from_raw_parts(ptr, 2) };
@@ -3003,6 +3028,7 @@
   type: |-
     *mut usize
   value: |-
+    let mut y = Vec::from([1usize; 2]);
     y.as_mut_ptr()
   POS:
     source: |-
@@ -3012,7 +3038,6 @@
 
       fn main() {
           let mut x = Vec::from([1usize; 2]);
-          let mut y = Vec::from([1usize; 2]);
           let ptr = SOURCE!();
           drop(x); // SINK
           unsafe { slice::from_raw_parts_mut(ptr, 2) };
@@ -3025,7 +3050,6 @@
 
       fn main() {
           let mut x = Vec::from([1usize; 2]);
-          let mut y = Vec::from([1usize; 2]);
           let ptr = SOURCE!();
           
           unsafe { slice::from_raw_parts_mut(ptr, 2) };
@@ -3039,8 +3063,9 @@
   features:
     - Method core::slice::raw::from_ptr_range
   type: |-
-    Range<*const usize>
+    std::ops::Range<*const usize>
   value: |-
+    let y = Vec::from([1usize; 2]);
     y.as_ptr_range()
   POS:
     source: |-
@@ -3051,7 +3076,6 @@
 
       fn main() {
           let x = Vec::from([1usize; 2]);
-          let y = Vec::from([1usize; 2]);
           let range = SOURCE!();
           drop(x); // SINK
           unsafe { slice::from_ptr_range(range) };
@@ -3065,7 +3089,6 @@
 
       fn main() {
           let x = Vec::from([1usize; 2]);
-          let y = Vec::from([1usize; 2]);
           let range = SOURCE!();
           
           unsafe { slice::from_ptr_range(range) };
@@ -3079,8 +3102,9 @@
   features:
     - Method core::slice::raw::from_raw_parts_mut
   type: |-
-    Range<*mut usize>
+    std::ops::Range<*mut usize>
   value: |-
+    let mut y = Vec::from([1usize; 2]);
     y.as_mut_ptr_range()
   POS:
     source: |-
@@ -3091,7 +3115,7 @@
 
       fn main() {
           let mut x = Vec::from([1usize; 2]);
-          let mut y = Vec::from([1usize; 2]);
+          
           let range = SOURCE!();
           drop(x); // SINK
           unsafe { slice::from_mut_ptr_range(range) };
@@ -3105,7 +3129,6 @@
 
       fn main() {
           let mut x = Vec::from([1usize; 2]);
-          let mut y = Vec::from([1usize; 2]);
           let range = SOURCE!();
           
           unsafe { slice::from_mut_ptr_range(range) };
@@ -3122,19 +3145,18 @@
     - Method core::mem::maybe_uninit::MaybeUninit::assume_init
     - PS
   type: |-
-    MaybeUninit<usize>
+    MaybeUninit<Box<usize>>
   value: |-
     {
-        let mut x = MaybeUninit::<usize>::uninit();
-        x.write(1);
-        x
+        let mut z = MaybeUninit::<Box<usize>>::uninit();
+        z.write(Box::new(1));
+        z
     }
   POS:
     source: |-
-      MaybeUninit::<usize>::uninit()
+      MaybeUninit::<Box<usize>>::uninit()
     code: |-
-      #![feature(maybe_uninit_extra)]
-      use std::mem::{forget, MaybeUninit};
+      use std::mem::MaybeUninit;
 
       fn main() {
           let mut x = SOURCE!();
@@ -3142,14 +3164,13 @@
               x.assume_init()
           };
           None::<u8>.unwrap(); // SINK
-          forget(y);
+          y.as_ref();
       }
   NEG:
     source: |-
-      MaybeUninit::<usize>::uninit()
+      MaybeUninit::<Box<usize>>::uninit()
     code: |-
-      #![feature(maybe_uninit_extra)]
-      use std::mem::{forget, MaybeUninit};
+      use std::mem::MaybeUninit;
 
       fn main() {
           let mut x = SOURCE!();
@@ -3158,7 +3179,7 @@
               x.assume_init()
           };
           None::<u8>.unwrap();
-          forget(y);
+          y.as_ref();
       }
 
 - description: Dangling pointer access - DF
@@ -3178,7 +3199,7 @@
       ManuallyDrop::<Box<usize>>::new(Box::new(1))
     code: |-
       #![feature(manually_drop_take)]
-      use std::mem::ManuallyDrop;
+      use std::mem::{forget, ManuallyDrop};
 
       fn main() {
           let mut slot = SOURCE!();
@@ -3192,7 +3213,7 @@
       ManuallyDrop::<Box<usize>>::new(Box::new(1))
     code: |-
       #![feature(manually_drop_take)]
-      use std::mem::ManuallyDrop;
+      use std::mem::{forget, ManuallyDrop};
 
       fn main() {
           let mut slot = SOURCE!();
@@ -3213,7 +3234,8 @@
   type: |-
     *mut Box<i32>
   value: |-
-    &mut y as *mut Box<i32>
+    let mut z = Box::new(0);
+    &mut z as *mut Box<i32>
   POS:
     source: |-
       &mut y as *mut Box<i32>
@@ -3256,7 +3278,8 @@
   type: |-
     *mut Box<i32>
   value: |-
-    &mut y as *mut Box<i32>
+    let mut z = Box::new(0);
+    &mut z as *mut Box<i32>
   POS:
     source: |-
       &mut y as *mut Box<i32>
@@ -3299,7 +3322,8 @@
   type: |-
     *mut Box<i32>
   value: |-
-    &mut y as *mut Box<i32>
+    let mut z = Box::new(0);
+    &mut z as *mut Box<i32>
   POS:
     source: |-
       &mut y as *mut Box<i32>
@@ -3342,7 +3366,8 @@
   type: |-
     *mut Box<i32>
   value: |-
-    &mut y as *mut Box<i32>
+    let mut z = Box::new(0);
+    &mut z as *mut Box<i32>
   POS:
     source: |-
       &mut y as *mut Box<i32>

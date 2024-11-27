@@ -7,29 +7,30 @@
 
 - name: Array
   code: |-
-    let array = [SOURCE!(), VALUE!()];
-    array[0].clone()
+    let array: [TYPE!(); 2] = [SOURCE!(), VALUE!()];
+    let [first, ..] = array;
+    first
 
 - name: Tuple
   code: |-
-    let tuple = (SOURCE!(), String::from("Hello, world!"));
+    let tuple: (TYPE!(), String) = (SOURCE!(), String::from("Hello, world!"));
     tuple.0
 
-- name: Shared slice
-  code: |-
-    let slice = &[SOURCE!(), VALUE!()][..];
-    slice[0].clone()
+# - name: Shared slice
+#   code: |-
+#     let mut slice: &[TYPE!()] = &[SOURCE!(), VALUE!()][..];
+#     std::mem::replace(&mut slice[0], VALUE!())
 
 - name: Mutable slice
   code: |-
-    let slice = &mut [SOURCE!(), VALUE!()][..];
-    slice[0].clone()
+    let slice: &mut [TYPE!()] = &mut [SOURCE!(), VALUE!()][..];
+    std::mem::replace(&mut slice[0], VALUE!())
 
 - name: Boxed slice
   code: |-
-    let boxed_array = Box::new([SOURCE!(), VALUE!()]);
-    let slice = &boxed_array[..];
-    slice[0].clone()
+    let mut boxed_array = Box::new([SOURCE!(), VALUE!()]);
+    let slice: &mut [TYPE!()] = &mut boxed_array[..];
+    std::mem::replace(&mut slice[0], VALUE!())
 
 - name: Struct(struct)
   code: |-
@@ -62,7 +63,7 @@
     struct Struct {
         place: TYPE!(),
         other: String
-    }
+    };
 
     let base = Struct {
         place: SOURCE!(),
