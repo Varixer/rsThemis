@@ -1,7 +1,7 @@
 use std::{
     ffi::OsStr,
     fs::{self, File},
-    io::{self, Write},
+    io::{self},
     os::unix::fs::PermissionsExt as _,
     path::{Path, PathBuf},
     process::{Command, Output},
@@ -19,11 +19,11 @@ where
     let output = Command::new("cargo")
         .arg("new")
         .args(["--vcs", "none", "--edition", "2018"])
-        .arg(path)
+        .arg(&path)
         .output()
         .expect("cargo command failed to start");
     if output.status.success() {
-        info!("{}", String::from_utf8_lossy(&output.stdout));
+        info!("Generate Harness: {}", path.as_ref().to_str().unwrap());
     }
 }
 

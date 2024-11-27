@@ -6,6 +6,7 @@ use config::{Flows, Testcases};
 use eval_tree::{EvalNode, EvalTree};
 use log::{error, info};
 use rand::Rng as _;
+use rayon::prelude::*;
 use serde::Serialize;
 use std::{
     collections::VecDeque,
@@ -33,6 +34,7 @@ impl Evaluator {
         utils::is_executable(&tool);
         let harness = output.join("harness");
         let output = output.join(tool.file_stem().unwrap());
+        std::fs::create_dir_all(&output).expect(" std::fs::create_dir_all failed");
         Evaluator {
             executor: Executor::new(tool, harness),
             config: Config::new(config, length, depth),
@@ -42,16 +44,19 @@ impl Evaluator {
     }
 
     pub fn main(&self) {
+        // 确保 targets 的生命周期独立
         let targets = if self.targets.is_empty() {
-            &(0..self.config.testcases.len()).collect()
+            (0..self.config.testcases.len()).collect()
         } else {
-            &self.targets
+            self.targets.clone()
         };
-        let mut summaries = Vec::new();
-        for idx in targets {
-            summaries.push(self.evaluate_one(*idx));
-        }
+        // 并行处理每个任务
+        let summaries: Vec<_> = targets
+            .par_iter() // 使用并行迭代器
+            .map(|&idx| self.evaluate_one(idx))
+            .collect();
 
+        // 写入结果
         utils::serialize_to_csv(&summaries, self.output.join("EvalSummary.csv")).unwrap();
     }
 
@@ -64,6 +69,7 @@ impl Evaluator {
             );
             std::process::exit(1);
         } else {
+            utils::generate_harness(self.executor.harness.join(format!("harness-{}", idx)));
             self.evaluate(idx)
         }
     }
@@ -83,7 +89,10 @@ impl Evaluator {
             );
 
             // 执行评估
-            let outputs = (self.executor.execute(pos), self.executor.execute(neg));
+            let outputs = (
+                self.executor.execute(idx, pos),
+                self.executor.execute(idx, neg),
+            );
             utils::evaluate(outputs)
         };
 
@@ -147,14 +156,14 @@ pub(crate) struct Executor {
 
 impl Executor {
     pub(crate) fn new(tool: PathBuf, harness: PathBuf) -> Self {
-        utils::generate_harness(&harness);
+        std::fs::create_dir_all(&harness).expect(" std::fs::create_dir_all failed");
         Executor { tool, harness }
     }
 
-    pub(crate) fn execute(&self, program: Program) -> Output {
-        program.into_harness(&self.harness);
+    pub(crate) fn execute(&self, idx: usize, program: Program) -> Output {
+        program.into_harness(&self.harness.join(format!("harness-{}", idx)));
         Command::new(&self.tool)
-            .arg(&self.harness)
+            .arg(&self.harness.join(format!("harness-{}", idx)))
             .output()
             .expect("Tool failed to execute")
     }
@@ -168,10 +177,12 @@ pub(crate) enum EvalResult {
     FN,   // 漏报
 }
 
-
 #[derive(Serialize)]
 pub(crate) struct EvalSummary {
-    #[serde(rename = "编号", serialize_with = "EvalSummary::format_with_leading_zeros")]
+    #[serde(
+        rename = "编号",
+        serialize_with = "EvalSummary::format_with_leading_zeros"
+    )]
     idx: usize,
     #[serde(rename = "通过")]
     pass_count: usize,
@@ -206,7 +217,10 @@ impl EvalSummary {
     }
 
     // Custom function to serialize numbers with leading zeros
-    pub(crate) fn format_with_leading_zeros<S>(num: &usize, serializer: S) -> Result<S::Ok, S::Error>
+    pub(crate) fn format_with_leading_zeros<S>(
+        num: &usize,
+        serializer: S,
+    ) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
     {
@@ -346,7 +360,7 @@ fn main() {
             "".to_string(),
         );
 
-        let output = executor.execute(program);
+        let output = executor.execute(0, program);
         println!("{:#?}", output);
     }
 }
