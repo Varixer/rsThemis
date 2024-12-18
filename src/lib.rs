@@ -2,6 +2,7 @@ mod config;
 mod eval_tree;
 mod utils;
 
+use clap::ValueEnum;
 use config::{Flows, Testcases};
 use eval_tree::{EvalNode, EvalTree};
 use log::{error, info};
@@ -19,6 +20,7 @@ pub struct Evaluator {
     executor: Executor,
     config: Config,
     targets: Vec<usize>,
+    level: Level,
     output: PathBuf,
 }
 
@@ -27,6 +29,7 @@ impl Evaluator {
         tool: PathBuf,
         config: PathBuf,
         targets: Vec<usize>,
+        level: Level,
         length: usize,
         depth: usize,
         output: PathBuf,
@@ -39,6 +42,7 @@ impl Evaluator {
             executor: Executor::new(tool, harness),
             config: Config::new(config, length, depth),
             targets,
+            level,
             output,
         }
     }
@@ -93,7 +97,10 @@ impl Evaluator {
                 self.executor.execute(idx, pos),
                 self.executor.execute(idx, neg),
             );
-            utils::evaluate(outputs)
+            match self.level {
+                Level::LOW => utils::low_evaluate(outputs),
+                Level::HIGH => utils::high_evaluate(outputs),
+            }
         };
 
         // 获取要评估的 testcase
@@ -338,6 +345,12 @@ impl Config {
             depth,
         }
     }
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq, ValueEnum)]
+pub enum Level {
+    LOW,
+    HIGH,
 }
 
 #[cfg(test)]

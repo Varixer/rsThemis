@@ -1768,6 +1768,7 @@
       NonZeroU32::MAX
     code: |-
       #![feature(nonzero_ops)]
+      #![feature(nonzero_min_max)]
       use std::num::NonZeroU32;
 
       fn main() {
@@ -1802,6 +1803,7 @@
       NonZeroU32::MAX
     code: |-
       #![feature(nonzero_ops)]
+      #![feature(nonzero_min_max)]
       use std::num::NonZeroU32;
 
       fn main() {
@@ -2476,6 +2478,7 @@
     source: |-
       [0_i32, 1_i32, 2_i32]
     code: |-
+      #![feature(pointer_byte_offsets)]
       fn main() {
           let x = SOURCE!();
           let ptr = x.as_ptr();
@@ -2485,6 +2488,7 @@
     source: |-
       [0_i32, 1_i32, 2_i32]
     code: |-
+      #![feature(pointer_byte_offsets)]
       fn main() {
           let x = SOURCE!();
           let ptr = x.as_ptr();
@@ -2506,6 +2510,7 @@
     source: |-
       [0_i32, 1_i32, 2_i32]
     code: |-
+      #![feature(pointer_byte_offsets)]
       fn main() {
           let x = SOURCE!();
           let ptr = x.as_ptr();
@@ -2515,6 +2520,7 @@
     source: |-
       [0_i32, 1_i32, 2_i32]
     code: |-
+      #![feature(pointer_byte_offsets)]
       fn main() {
           let x = SOURCE!();
           let ptr = x.as_ptr();

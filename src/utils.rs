@@ -47,12 +47,25 @@ where
     }
 }
 
-/// Logical implementation of test case evaluation
-pub(crate) fn evaluate((pos, neg): (Output, Output)) -> EvalResult {
+/// 高精度的评估逻辑实现
+pub(crate) fn high_evaluate((pos, neg): (Output, Output)) -> EvalResult {
     if pos.status.success() && neg.status.success() {
         match (pos.stdout.is_empty(), neg.stdout.is_empty()) {
             (false, true) => EvalResult::Pass, // 通过
             (false, false) => EvalResult::FP,  // 误报
+            _ => EvalResult::FN,               // 漏报
+        }
+    } else {
+        EvalResult::Err
+    }
+}
+
+/// 低精度的评估逻辑实现
+pub(crate) fn low_evaluate((pos, neg): (Output, Output)) -> EvalResult {
+    if pos.status.success() && neg.status.success() {
+        match (pos.stdout.is_empty(), neg.stdout.is_empty()) {
+            (false, _) => EvalResult::Pass, // 通过
+            // (false, false) => EvalResult::FP,  // 误报
             _ => EvalResult::FN,               // 漏报
         }
     } else {
