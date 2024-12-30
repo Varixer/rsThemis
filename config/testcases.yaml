@@ -19,7 +19,7 @@
 
       fn main() {
           let layout = Layout::new::<usize>();
-          let ptr = SOURCE!();
+          let ptr = SOURCE!(); // SOURCE
           unsafe {
               let _ = *(ptr as *mut usize) + 1; // SINK
               dealloc(ptr, layout);
@@ -33,7 +33,7 @@
 
       fn main() {
           let layout = Layout::new::<usize>();
-          let ptr = SOURCE!();
+          let ptr = SOURCE!(); // SOURCE
           unsafe {
               (ptr as *mut usize).write(0);
               let _ = *(ptr as *mut usize) + 1;
@@ -60,7 +60,7 @@
 
       fn main() {
           let layout = Layout::new::<usize>();
-          let ptr = SOURCE!();
+          let ptr = SOURCE!(); // SOURCE
           unsafe {
               dealloc(ptr, layout); // SINK
           }
@@ -73,7 +73,7 @@
 
       fn main() {
           let layout = Layout::new::<usize>();
-          let ptr = SOURCE!();
+          let ptr = SOURCE!(); // SOURCE
           unsafe {
               dealloc(ptr, layout);
           }
@@ -97,7 +97,7 @@
       use std::{alloc::{dealloc, realloc, Layout}, ptr::null_mut};
       fn main() {
           let mut layout = Layout::from_size_align(1, 1).unwrap();
-          let mut ptr = SOURCE!();
+          let mut ptr = SOURCE!(); // SOURCE
           ptr = unsafe { realloc(ptr, layout, 2) }; // SINK
           
           layout = Layout::from_size_align(2, 1).unwrap();
@@ -110,7 +110,7 @@
       use std::alloc::{alloc, dealloc, realloc, Layout};
       fn main() {
           let mut layout = Layout::from_size_align(1, 1).unwrap();
-          let mut ptr = SOURCE!();
+          let mut ptr = SOURCE!(); // SOURCE
           ptr = unsafe { realloc(ptr, layout, 2) };
           
           layout = Layout::from_size_align(2, 1).unwrap();
@@ -135,7 +135,7 @@
       use std::alloc::{alloc, dealloc, realloc, Layout};
       fn main() {
           let mut layout = Layout::from_size_align(1, 1).unwrap();
-          let ptr = SOURCE!();
+          let ptr = SOURCE!(); // SOURCE
           let new_ptr = unsafe { realloc(ptr, layout, 2) }; // SINK
           
           unsafe { dealloc(ptr, layout) };
@@ -149,7 +149,7 @@
       use std::alloc::{alloc, dealloc, realloc, Layout};
       fn main() {
           let mut layout = Layout::from_size_align(1, 1).unwrap();
-          let ptr = SOURCE!();
+          let ptr = SOURCE!(); // SOURCE
           let new_ptr = unsafe { realloc(ptr, layout, 2) };
           
           layout = Layout::from_size_align(2, 1).unwrap();
@@ -178,7 +178,7 @@
     code: |-
       #![feature(new_uninit)]
       fn main() {
-          let x = SOURCE!();
+          let x = SOURCE!(); // SOURCE
           let y = unsafe { x.assume_init() }; // SINK
           assert_eq!(*y, 0);
       }
@@ -188,7 +188,7 @@
     code: |-
       #![feature(new_uninit)]
       fn main() {
-          let mut x = SOURCE!();
+          let mut x = SOURCE!(); // SOURCE
           unsafe { x.as_mut_ptr().write(5); }
           let y = unsafe { x.assume_init() };
           assert_eq!(*y, 5);
@@ -217,7 +217,7 @@
       #![feature(new_uninit)]
       use std::rc::Rc;
       fn main() {
-          let mut x = SOURCE!();
+          let mut x = SOURCE!(); // SOURCE
           let y = unsafe { x.assume_init() }; // SINK
           assert_eq!(*y, 0);
       }
@@ -228,7 +228,7 @@
       #![feature(new_uninit)]
       use std::rc::Rc;
       fn main() {
-          let mut x = SOURCE!();
+          let mut x = SOURCE!(); // SOURCE
           Rc::get_mut(&mut x).unwrap().write(5);
           let y = unsafe { x.assume_init() };
           assert_eq!(*y, 5);
@@ -259,7 +259,7 @@
       use std::rc::Rc;
       fn main() {
           let x = Rc::new(5usize);
-          let ptr = SOURCE!();
+          let ptr = SOURCE!(); // SOURCE
           unsafe {
               Rc::decrement_strong_count(ptr);
               Rc::decrement_strong_count(ptr); // SINK
@@ -272,7 +272,7 @@
       use std::rc::Rc;
       fn main() {
           let x = Rc::new(5usize);
-          let ptr = SOURCE!();
+          let ptr = SOURCE!(); // SOURCE
           unsafe {
               Rc::decrement_strong_count(ptr);
           }
@@ -300,7 +300,7 @@
           let x: Rc<&str> = Rc::new("Hello, world!");
           {
               let s = String::from("Oh, no!");
-              let mut y: Rc<&str> = SOURCE!();
+              let mut y: Rc<&str> = SOURCE!(); // SOURCE
               unsafe {
                   *Rc::get_mut_unchecked(&mut y) = &s; // SINK
               }
@@ -317,7 +317,7 @@
           let x: Rc<&str> = Rc::new("Hello, world!");
           let s = String::from("Oh, no!");
           {
-              let mut y: Rc<&str> = SOURCE!();
+              let mut y: Rc<&str> = SOURCE!(); // SOURCE
               unsafe {
                   *Rc::get_mut_unchecked(&mut y) = &s;
               }
@@ -348,7 +348,7 @@
       use std::rc::Rc;
       fn main() {
           let x = Rc::new(5usize);
-          let ptr = SOURCE!();
+          let ptr = SOURCE!(); // SOURCE
           unsafe {
               Rc::increment_strong_count(ptr); // SINK
           }
@@ -360,7 +360,7 @@
       use std::rc::Rc;
       fn main() {
           let x = Rc::new(0usize);
-          let ptr = SOURCE!();
+          let ptr = SOURCE!(); // SOURCE
           unsafe {
               Rc::increment_strong_count(ptr);
               Rc::decrement_strong_count(ptr);
@@ -396,7 +396,7 @@
       use std::{array::IntoIter, mem::MaybeUninit};
 
       fn main() {
-          let mut buffer: [MaybeUninit<u8>; 3] = SOURCE!();
+          let mut buffer: [MaybeUninit<u8>; 3] = SOURCE!(); // SOURCE
           let x = unsafe { IntoIter::new_unchecked(buffer, 0..2) };
           let _ = x.collect::<Vec<_>>(); // SINK
       }
@@ -410,7 +410,7 @@
       use std::{array::IntoIter, mem::MaybeUninit};
 
       fn main() {
-          let mut buffer: [MaybeUninit<u8>; 3] = SOURCE!();
+          let mut buffer: [MaybeUninit<u8>; 3] = SOURCE!(); // SOURCE
           buffer[0].write(0);
           buffer[1].write(1);
           buffer[2].write(2);
@@ -443,7 +443,7 @@
           buffer[0].write(0);
           buffer[1].write(1);
           buffer[2].write(2);
-          let range = SOURCE!();
+          let range = SOURCE!(); // SOURCE
           let x = unsafe { IntoIter::new_unchecked(buffer, range) };
           let _ = x.collect::<Vec<_>>(); // SINK
       }
@@ -461,7 +461,7 @@
           buffer[0].write(0);
           buffer[1].write(1);
           buffer[2].write(2);
-          let range = SOURCE!();
+          let range = SOURCE!(); // SOURCE
           let x = unsafe { IntoIter::new_unchecked(buffer, range) };
           let _ = x.collect::<Vec<_>>();
       }
@@ -485,7 +485,7 @@
       use std::ffi::{c_char, CStr};
 
       fn main() {
-          let ptr: *const c_char = SOURCE!();
+          let ptr: *const c_char = SOURCE!(); // SOURCE
           unsafe { let _ = CStr::from_ptr(ptr); }; // SINK
       }
   NEG:
@@ -495,7 +495,7 @@
       use std::ffi::{c_char, CStr};
 
       fn main() {
-          let ptr: *const c_char = SOURCE!();
+          let ptr: *const c_char = SOURCE!(); // SOURCE
           unsafe { let _ = CStr::from_ptr(ptr); };
       }
 
@@ -518,7 +518,7 @@
       use std::mem::ManuallyDrop;
 
       fn main() {
-          let mut slot: ManuallyDrop<Box<usize>> = SOURCE!();
+          let mut slot: ManuallyDrop<Box<usize>> = SOURCE!(); // SOURCE
           unsafe {
               ManuallyDrop::drop(&mut slot); // SINK
           }
@@ -531,7 +531,7 @@
       use std::mem::ManuallyDrop;
 
       fn main() {
-          let mut slot: ManuallyDrop<Box<usize>> = SOURCE!();
+          let mut slot: ManuallyDrop<Box<usize>> = SOURCE!(); // SOURCE
           
           ManuallyDrop::into_inner(slot);
       }
@@ -555,7 +555,7 @@
       use std::mem::ManuallyDrop;
 
       fn main() {
-          let mut slot = SOURCE!();
+          let mut slot = SOURCE!(); // SOURCE
           unsafe { let _ = ManuallyDrop::take(&mut slot); }; // SINK
           ManuallyDrop::into_inner(slot);
       }
@@ -567,7 +567,7 @@
       use std::mem::ManuallyDrop;
 
       fn main() {
-          let mut slot = SOURCE!();
+          let mut slot = SOURCE!(); // SOURCE
           
           ManuallyDrop::into_inner(slot);
       }
@@ -598,7 +598,7 @@
       use std::mem::MaybeUninit;
 
       fn main() {
-          let mut array: [MaybeUninit<i32>; 3] = SOURCE!();
+          let mut array: [MaybeUninit<i32>; 3] = SOURCE!(); // SOURCE
           array[1].write(1);
           array[2].write(2);
 
@@ -618,7 +618,7 @@
       use std::mem::MaybeUninit;
 
       fn main() {
-          let mut array: [MaybeUninit<i32>; 3] = SOURCE!();
+          let mut array: [MaybeUninit<i32>; 3] = SOURCE!(); // SOURCE
           array[1].write(1);
           array[2].write(2);
 
@@ -648,7 +648,7 @@
       use std::mem::MaybeUninit;
 
       fn main() {
-          let x = SOURCE!();
+          let x = SOURCE!(); // SOURCE
           unsafe { x.assume_init() }; // SINK
       }
   NEG:
@@ -663,7 +663,7 @@
       use std::mem::MaybeUninit;
 
       fn main() {
-          let x = SOURCE!();
+          let x = SOURCE!(); // SOURCE
           unsafe { x.assume_init() };
       }
 
@@ -690,7 +690,7 @@
       use std::mem::MaybeUninit;
 
       fn main() {
-          let mut x = SOURCE!();
+          let mut x = SOURCE!(); // SOURCE
           unsafe { x.assume_init_drop() }; // SINK
       }
   NEG:
@@ -705,7 +705,7 @@
       use std::mem::MaybeUninit;
 
       fn main() {
-          let mut x = SOURCE!();
+          let mut x = SOURCE!(); // SOURCE
           unsafe { x.assume_init_drop() };
       }
 
@@ -728,7 +728,7 @@
       use std::mem::MaybeUninit;
 
       fn main() {
-          let mut x = SOURCE!();
+          let mut x = SOURCE!(); // SOURCE
           x.write(Box::new(1));
           unsafe {
               x.assume_init_drop();
@@ -743,7 +743,7 @@
       use std::mem::MaybeUninit;
 
       fn main() {
-          let mut x = SOURCE!();
+          let mut x = SOURCE!(); // SOURCE
           x.write(Box::new(1));
           unsafe {
               x.assume_init_drop();
@@ -774,7 +774,7 @@
       use std::{cell::Cell, mem::MaybeUninit};
 
       fn main() {
-          let mut x = SOURCE!();
+          let mut x = SOURCE!(); // SOURCE
           unsafe { x.assume_init_mut().set(true); } // SINK
       }
   NEG:
@@ -790,7 +790,7 @@
       use std::{cell::Cell, mem::MaybeUninit};
 
       fn main() {
-          let mut x = SOURCE!();
+          let mut x = SOURCE!(); // SOURCE
           unsafe { x.assume_init_mut().set(true); }
       }
 
@@ -818,7 +818,7 @@
       use std::mem::MaybeUninit;
 
       fn main() {
-          let mut x = SOURCE!();
+          let mut x = SOURCE!(); // SOURCE
           unsafe { x.assume_init_read() }; // SINK
       }
   NEG:
@@ -834,7 +834,7 @@
       use std::mem::MaybeUninit;
 
       fn main() {
-          let mut x = SOURCE!();
+          let mut x = SOURCE!(); // SOURCE
           unsafe { x.assume_init_read() };
       }
 
@@ -867,7 +867,7 @@
       use std::mem::MaybeUninit;
 
       fn main() {
-          let mut x = SOURCE!();
+          let mut x = SOURCE!(); // SOURCE
           unsafe { x.assume_init_read() }; // SINK
       }
   NEG:
@@ -883,7 +883,7 @@
       use std::mem::MaybeUninit;
 
       fn main() {
-          let mut x = SOURCE!();
+          let mut x = SOURCE!(); // SOURCE
           unsafe { x.assume_init_read() };
       }
 
@@ -911,7 +911,7 @@
       use std::mem::MaybeUninit;
 
       fn main() {
-          let mut x = SOURCE!();
+          let mut x = SOURCE!(); // SOURCE
           unsafe { x.assume_init_ref().is_empty() }; // SINK
       }
   NEG:
@@ -927,7 +927,7 @@
       use std::mem::MaybeUninit;
 
       fn main() {
-          let mut x = SOURCE!();
+          let mut x = SOURCE!(); // SOURCE
           unsafe { x.assume_init_ref().is_empty() };
           unsafe { x.assume_init() };
       }
@@ -964,7 +964,7 @@
       use std::mem::MaybeUninit;
 
       fn main() {
-          let mut array = SOURCE!();
+          let mut array = SOURCE!(); // SOURCE
           unsafe { MaybeUninit::slice_assume_init_mut(&mut array)[0] }; // SINK
       }
   NEG:
@@ -983,7 +983,7 @@
       use std::mem::MaybeUninit;
 
       fn main() {
-          let mut array = SOURCE!();
+          let mut array = SOURCE!(); // SOURCE
           unsafe { MaybeUninit::slice_assume_init_mut(&mut array)[0] };
       }
 
@@ -1019,7 +1019,7 @@
       use std::mem::MaybeUninit;
 
       fn main() {
-          let mut array = SOURCE!();
+          let mut array = SOURCE!(); // SOURCE
           unsafe { MaybeUninit::slice_assume_init_ref(&mut array)[0] }; // SINK
       }
   NEG:
@@ -1038,7 +1038,7 @@
       use std::mem::MaybeUninit;
 
       fn main() {
-          let mut array = SOURCE!();
+          let mut array = SOURCE!(); // SOURCE
           unsafe { MaybeUninit::slice_assume_init_ref(&mut array)[0] };
       }
 
@@ -1063,7 +1063,7 @@
       fn main() {
           let x = String::from("111");
           let ptr = x.as_str() as *const str;
-          let range = SOURCE!();
+          let range = SOURCE!(); // SOURCE
           unsafe { range.get_unchecked(ptr); } // SINK
       }
   NEG:
@@ -1075,7 +1075,7 @@
       fn main() {
           let x = String::from("111");
           let ptr = x.as_str() as *const str;
-          let range = SOURCE!();
+          let range = SOURCE!(); // SOURCE
           unsafe { range.get_unchecked(ptr); }
       }
 
@@ -1103,7 +1103,7 @@
       use std::slice::SliceIndex;
       fn main() {
           let x = String::from("111");
-          let ptr = SOURCE!();
+          let ptr = SOURCE!(); // SOURCE
           let range = 0..2;
           unsafe { range.get_unchecked(ptr).as_ref(); } // SINK
       }
@@ -1115,7 +1115,7 @@
       use std::slice::SliceIndex;
       fn main() {
           let x = String::from("111");
-          let ptr = SOURCE!();
+          let ptr = SOURCE!(); // SOURCE
           let range = 0..2;
           unsafe { range.get_unchecked(ptr).as_ref(); }
       }
@@ -1140,7 +1140,7 @@
       fn main() {
           let mut x = String::from("111");
           let ptr = x.as_mut_str() as *mut str;
-          let range = SOURCE!();
+          let range = SOURCE!(); // SOURCE
           unsafe { range.get_unchecked_mut(ptr).as_ref(); } // SINK
       }
   NEG:
@@ -1152,7 +1152,7 @@
       fn main() {
           let mut x = String::from("111");
           let ptr = x.as_mut_str() as *mut str;
-          let range = SOURCE!();
+          let range = SOURCE!(); // SOURCE
           unsafe { range.get_unchecked_mut(ptr).as_ref(); }
       }
 
@@ -1180,7 +1180,7 @@
       use std::slice::SliceIndex;
       fn main() {
           let mut x = String::from("111");
-          let ptr = SOURCE!();
+          let ptr = SOURCE!(); // SOURCE
           let range = 0..2;
           unsafe { range.get_unchecked_mut(ptr).as_ref(); } // SINK
       }
@@ -1192,7 +1192,7 @@
       use std::slice::SliceIndex;
       fn main() {
           let mut x = String::from("111");
-          let ptr = SOURCE!();
+          let ptr = SOURCE!(); // SOURCE
           let range = 0..2;
           unsafe { range.get_unchecked_mut(ptr).as_ref(); }
       }
@@ -1215,7 +1215,7 @@
       [0_i32, 1_i32, 2_i32]
     code: |-
       fn main() {
-          let x = SOURCE!();
+          let x = SOURCE!(); // SOURCE
           let ptr = x.as_ptr();
           unsafe { *ptr.add(3); } // SINK
       }
@@ -1224,7 +1224,7 @@
       [0_i32, 1_i32, 2_i32]
     code: |-
       fn main() {
-          let x = SOURCE!();
+          let x = SOURCE!(); // SOURCE
           let ptr = x.as_ptr();
           unsafe { *ptr.add(2); }
       }
@@ -1247,7 +1247,7 @@
     code: |-
       fn main() {
           let x = Box::new(0usize);
-          let ptr = SOURCE!();
+          let ptr = SOURCE!(); // SOURCE
           unsafe { Box::from_raw(ptr); }
           unsafe { ptr.as_mut(); } // SINK
       }
@@ -1257,7 +1257,7 @@
     code: |-
       fn main() {
           let x = Box::new(0usize);
-          let ptr = SOURCE!();
+          let ptr = SOURCE!(); // SOURCE
           unsafe { ptr.as_mut(); }
           unsafe { Box::from_raw(ptr); }
       }
@@ -1280,7 +1280,7 @@
     code: |-
       fn main() {
           let x = Box::new(0usize);
-          let ptr = SOURCE!();
+          let ptr = SOURCE!(); // SOURCE
           unsafe { Box::from_raw(ptr); }
           unsafe { ptr.as_ref(); } // SINK
       }
@@ -1290,7 +1290,7 @@
     code: |-
       fn main() {
           let x = Box::new(0usize);
-          let ptr = SOURCE!();
+          let ptr = SOURCE!(); // SOURCE
           unsafe { ptr.as_ref(); }
           unsafe { Box::from_raw(ptr); }
       }
@@ -1314,7 +1314,7 @@
       #![feature(ptr_as_uninit)]
       fn main() {
           let x = Box::new(0usize);
-          let ptr = SOURCE!();
+          let ptr = SOURCE!(); // SOURCE
           unsafe { Box::from_raw(ptr); }
           unsafe { ptr.as_uninit_mut(); } // SINK
       }
@@ -1325,7 +1325,7 @@
       #![feature(ptr_as_uninit)]
       fn main() {
           let x = Box::new(0usize);
-          let ptr = SOURCE!();
+          let ptr = SOURCE!(); // SOURCE
           unsafe { ptr.as_uninit_mut(); }
           unsafe { Box::from_raw(ptr); }
       }
@@ -1349,7 +1349,7 @@
       #![feature(ptr_as_uninit)]
       fn main() {
           let x = Box::new(0usize);
-          let ptr = SOURCE!();
+          let ptr = SOURCE!(); // SOURCE
           unsafe { Box::from_raw(ptr); }
           unsafe { ptr.as_uninit_ref(); } // SINK
       }
@@ -1360,7 +1360,7 @@
       #![feature(ptr_as_uninit)]
       fn main() {
           let x = Box::new(0usize);
-          let ptr = SOURCE!();
+          let ptr = SOURCE!(); // SOURCE
           unsafe { ptr.as_uninit_ref(); }
           unsafe { Box::from_raw(ptr); }
       }
@@ -1382,7 +1382,7 @@
     code: |-
       #![feature(pointer_byte_offsets)]
       fn main() {
-          let x = SOURCE!();
+          let x = SOURCE!(); // SOURCE
           let ptr = x.as_ptr();
           unsafe { *ptr.byte_add(12); } // SINK
       }
@@ -1392,7 +1392,7 @@
     code: |-
       #![feature(pointer_byte_offsets)]
       fn main() {
-          let x = SOURCE!();
+          let x = SOURCE!(); // SOURCE
           let ptr = x.as_ptr();
           unsafe { *ptr.byte_add(8); }
       }
@@ -1414,7 +1414,7 @@
     code: |-
       #![feature(pointer_byte_offsets)]
       fn main() {
-          let x = SOURCE!();
+          let x = SOURCE!(); // SOURCE
           let ptr = x.as_ptr();
           unsafe { *ptr.byte_offset(12); } // SINK
       }
@@ -1424,7 +1424,7 @@
     code: |-
       #![feature(pointer_byte_offsets)]
       fn main() {
-          let x = SOURCE!();
+          let x = SOURCE!(); // SOURCE
           let ptr = x.as_ptr();
           unsafe { *ptr.byte_offset(8); }
       }
@@ -1445,7 +1445,7 @@
       [0_i32, 1_i32, 2_i32]
     code: |-
       fn main() {
-          let x = SOURCE!();
+          let x = SOURCE!(); // SOURCE
           let ptr = x.as_ptr();
           unsafe { *ptr.offset(3); } // SINK
       }
@@ -1454,7 +1454,7 @@
       [0_i32, 1_i32, 2_i32]
     code: |-
       fn main() {
-          let x = SOURCE!();
+          let x = SOURCE!(); // SOURCE
           let ptr = x.as_ptr();
           unsafe { *ptr.offset(2); }
       }
@@ -1481,7 +1481,7 @@
           let x = Box::new(12);
           let mut y = Box::new(0);
           let src = &x as *const Box<i32>;
-          let dst = SOURCE!();
+          let dst = SOURCE!(); // SOURCE
           unsafe { dst.copy_from(src, 1); } // SINK
       }
   NEG:
@@ -1494,7 +1494,7 @@
           let x = Box::new(12);
           let mut y = Box::new(0);
           let src = &x as *const Box<i32>;
-          let dst = SOURCE!();
+          let dst = SOURCE!(); // SOURCE
           unsafe { dst.copy_from(src, 1); }
           forget(y);
       }
@@ -1521,7 +1521,7 @@
           let x = Box::new(12);
           let mut y = Box::new(0);
           let src = &x as *const Box<i32>;
-          let dst = SOURCE!();
+          let dst = SOURCE!(); // SOURCE
           unsafe { dst.copy_from_nonoverlapping(src, 1); } // SINK
       }
   NEG:
@@ -1534,7 +1534,7 @@
           let x = Box::new(12);
           let mut y = Box::new(0);
           let src = &x as *const Box<i32>;
-          let dst = SOURCE!();
+          let dst = SOURCE!(); // SOURCE
           unsafe { dst.copy_from_nonoverlapping(src, 1); }
           forget(y);
       }
@@ -1561,7 +1561,7 @@
           let x = Box::new(12);
           let mut y = Box::new(0);
           let src = &x as *const Box<i32>;
-          let dst = SOURCE!();
+          let dst = SOURCE!(); // SOURCE
           unsafe { src.copy_to(dst, 1); } // SINK
       }
   NEG:
@@ -1574,7 +1574,7 @@
           let x = Box::new(12);
           let mut y = Box::new(0);
           let src = &x as *const Box<i32>;
-          let dst = SOURCE!();
+          let dst = SOURCE!(); // SOURCE
           unsafe { src.copy_to(dst, 1); }
           forget(y);
       }
@@ -1601,7 +1601,7 @@
           let x = Box::new(12);
           let mut y = Box::new(0);
           let src = &x as *const Box<i32>;
-          let dst = SOURCE!();
+          let dst = SOURCE!(); // SOURCE
           unsafe { src.copy_to_nonoverlapping(dst, 1); } // SINK
       }
   NEG:
@@ -1614,7 +1614,7 @@
           let x = Box::new(12);
           let mut y = Box::new(0);
           let src = &x as *const Box<i32>;
-          let dst = SOURCE!();
+          let dst = SOURCE!(); // SOURCE
           unsafe { src.copy_to_nonoverlapping(dst, 1); }
           forget(y);
       }
@@ -1639,7 +1639,7 @@
 
       fn main() {
           let mut x = Box::new(1);
-          let ptr = SOURCE!();
+          let ptr = SOURCE!(); // SOURCE
           unsafe {
               ptr.drop_in_place(); // SINK
           }
@@ -1652,7 +1652,7 @@
 
       fn main() {
           let mut x = Box::new(1);
-          let ptr = SOURCE!();
+          let ptr = SOURCE!(); // SOURCE
           forget(x);
           unsafe {
               ptr.drop_in_place();
@@ -1681,7 +1681,7 @@
       use std::mem::forget;
       fn main() {
           let x = Box::new(12);
-          let src = SOURCE!();
+          let src = SOURCE!(); // SOURCE
           unsafe { forget(src.read()); } // SINK
       }
   NEG:
@@ -1691,7 +1691,7 @@
       use std::mem::forget;
       fn main() {
           let x = Box::new(12);
-          let src = SOURCE!();
+          let src = SOURCE!(); // SOURCE
           unsafe { forget(src.read()); }
       }
 
@@ -1714,7 +1714,7 @@
       use std::mem::forget;
       fn main() {
           let x = Box::new(12);
-          let src = SOURCE!();
+          let src = SOURCE!(); // SOURCE
           unsafe { src.read(); } // SINK
       }
   NEG:
@@ -1724,10 +1724,9 @@
       use std::mem::forget;
       fn main() {
           let x = Box::new(12);
-          let src = SOURCE!();
+          let src = SOURCE!(); // SOURCE
           unsafe { forget(src.read()); }
       }
-
 
 ## slice
 - description: Dangling pointer access - UAF
@@ -1750,9 +1749,9 @@
 
       fn main() {
           let x = Vec::from([1usize; 2]);
-          let ptr = SOURCE!();
-          drop(x); // SINK
-          unsafe { slice::from_raw_parts(ptr, 2) };
+          let ptr = SOURCE!(); // SOURCE
+          drop(x);
+          unsafe { slice::from_raw_parts(ptr, 2) }; // SINK
       }
   NEG:
     source: |-
@@ -1762,7 +1761,7 @@
 
       fn main() {
           let x = Vec::from([1usize; 2]);
-          let ptr = SOURCE!();
+          let ptr = SOURCE!(); // SOURCE
           
           unsafe { slice::from_raw_parts(ptr, 2) };
       }
@@ -1787,9 +1786,9 @@
 
       fn main() {
           let mut x = Vec::from([1usize; 2]);
-          let ptr = SOURCE!();
-          drop(x); // SINK
-          unsafe { slice::from_raw_parts_mut(ptr, 2) };
+          let ptr = SOURCE!(); // SOURCE
+          drop(x);
+          unsafe { slice::from_raw_parts_mut(ptr, 2) }; // SINK
       }
   NEG:
     source: |-
@@ -1799,7 +1798,7 @@
 
       fn main() {
           let mut x = Vec::from([1usize; 2]);
-          let ptr = SOURCE!();
+          let ptr = SOURCE!(); // SOURCE
           
           unsafe { slice::from_raw_parts_mut(ptr, 2) };
       }
@@ -1825,9 +1824,9 @@
 
       fn main() {
           let x = Vec::from([1usize; 2]);
-          let range = SOURCE!();
-          drop(x); // SINK
-          unsafe { slice::from_ptr_range(range) };
+          let range = SOURCE!(); // SOURCE
+          drop(x);
+          unsafe { slice::from_ptr_range(range) }; // SINK
       }
   NEG:
     source: |-
@@ -1838,7 +1837,7 @@
 
       fn main() {
           let x = Vec::from([1usize; 2]);
-          let range = SOURCE!();
+          let range = SOURCE!(); // SOURCE
           
           unsafe { slice::from_ptr_range(range) };
       }
@@ -1865,9 +1864,9 @@
       fn main() {
           let mut x = Vec::from([1usize; 2]);
           
-          let range = SOURCE!();
-          drop(x); // SINK
-          unsafe { slice::from_mut_ptr_range(range) };
+          let range = SOURCE!(); // SOURCE
+          drop(x);
+          unsafe { slice::from_mut_ptr_range(range) }; // SINK
       }
   NEG:
     source: |-
@@ -1878,11 +1877,10 @@
 
       fn main() {
           let mut x = Vec::from([1usize; 2]);
-          let range = SOURCE!();
+          let range = SOURCE!(); // SOURCE
           
           unsafe { slice::from_mut_ptr_range(range) };
       }
-
 
 # Panic-PoC
 - description: Producing an invalid value - Uninitialized
@@ -1908,7 +1906,7 @@
       use std::mem::MaybeUninit;
 
       fn main() {
-          let mut x = SOURCE!();
+          let mut x = SOURCE!(); // SOURCE
           let y = unsafe {
               x.assume_init()
           };
@@ -1922,7 +1920,7 @@
       use std::mem::MaybeUninit;
 
       fn main() {
-          let mut x = SOURCE!();
+          let mut x = SOURCE!(); // SOURCE
           let y = unsafe {
               x.write(Box::new(1));
               x.assume_init()
@@ -1951,7 +1949,7 @@
       use std::mem::{forget, ManuallyDrop};
 
       fn main() {
-          let mut slot = SOURCE!();
+          let mut slot = SOURCE!(); // SOURCE
           let x = unsafe { ManuallyDrop::take(&mut slot) };
           let _y = ManuallyDrop::into_inner(slot);
           None::<u8>.unwrap();
@@ -1964,7 +1962,7 @@
       use std::mem::{forget, ManuallyDrop};
 
       fn main() {
-          let mut slot = SOURCE!();
+          let mut slot = SOURCE!(); // SOURCE
           let x = unsafe { ManuallyDrop::take(&mut slot) };
           forget(x);
           let _y = ManuallyDrop::into_inner(slot);
@@ -1994,11 +1992,11 @@
           let x = Box::new(12);
           let mut y = Box::new(0);
           let src = &x as *const Box<i32>;
-          let dst = SOURCE!();
+          let dst = SOURCE!(); // SOURCE
           unsafe { dst.copy_from(src, 1); }
-          None::<u8>.unwrap(); // SINK
+          None::<u8>.unwrap();
           forget(x);
-      }
+      } // SINK
   NEG:
     source: |-
       &mut y as *mut Box<i32>
@@ -2009,7 +2007,7 @@
           let x = Box::new(12);
           let mut y = Box::new(0);
           let src = &x as *const Box<i32>;
-          let dst = SOURCE!();
+          let dst = SOURCE!(); // SOURCE
           unsafe { dst.copy_from(src, 1); }
           
           forget(x);
@@ -2038,11 +2036,11 @@
           let x = Box::new(12);
           let mut y = Box::new(0);
           let src = &x as *const Box<i32>;
-          let dst = SOURCE!();
+          let dst = SOURCE!(); // SOURCE
           unsafe { dst.copy_from_nonoverlapping(src, 1); }
-          None::<u8>.unwrap(); // SINK
+          None::<u8>.unwrap();
           forget(x);
-      }
+      } // SINK
   NEG:
     source: |-
       &mut y as *mut Box<i32>
@@ -2053,7 +2051,7 @@
           let x = Box::new(12);
           let mut y = Box::new(0);
           let src = &x as *const Box<i32>;
-          let dst = SOURCE!();
+          let dst = SOURCE!(); // SOURCE
           unsafe { dst.copy_from_nonoverlapping(src, 1); }
           
           forget(x);
@@ -2082,11 +2080,11 @@
           let x = Box::new(12);
           let mut y = Box::new(0);
           let src = &x as *const Box<i32>;
-          let dst = SOURCE!();
+          let dst = SOURCE!(); // SOURCE
           unsafe { src.copy_to(dst, 1); }
-          None::<u8>.unwrap(); // SINK
+          None::<u8>.unwrap();
           forget(x);
-      }
+      } // SINK
   NEG:
     source: |-
       &mut y as *mut Box<i32>
@@ -2097,7 +2095,7 @@
           let x = Box::new(12);
           let mut y = Box::new(0);
           let src = &x as *const Box<i32>;
-          let dst = SOURCE!();
+          let dst = SOURCE!(); // SOURCE
           unsafe { src.copy_to(dst, 1); }
           
           forget(x);
@@ -2126,11 +2124,11 @@
           let x = Box::new(12);
           let mut y = Box::new(0);
           let src = &x as *const Box<i32>;
-          let dst = SOURCE!();
+          let dst = SOURCE!(); // SOURCE
           unsafe { src.copy_to_nonoverlapping(dst, 1); }
-          None::<u8>.unwrap(); // SINK
+          None::<u8>.unwrap();
           forget(x);
-      }
+      } // SINK
   NEG:
     source: |-
       &mut y as *mut Box<i32>
@@ -2141,12 +2139,12 @@
           let x = Box::new(12);
           let mut y = Box::new(0);
           let src = &x as *const Box<i32>;
-          let dst = SOURCE!();
+          let dst = SOURCE!(); // SOURCE
           unsafe { src.copy_to_nonoverlapping(dst, 1); }
           
           forget(x);
       }
-        
+
 - description: Dangling pointer access - DF
   tags:
     - SP(DualOwned)
@@ -2167,7 +2165,7 @@
 
       fn main() {
           let mut x = Box::new(1);
-          let ptr = SOURCE!();
+          let ptr = SOURCE!(); // SOURCE
           unsafe {
               ptr.drop_in_place();
           }
@@ -2181,7 +2179,7 @@
 
       fn main() {
           let mut x = Box::new(1);
-          let ptr = SOURCE!();
+          let ptr = SOURCE!(); // SOURCE
           forget(x);
           unsafe {
               ptr.drop_in_place();
@@ -2208,7 +2206,7 @@
       use std::mem::forget;
       fn main() {
           let x = Box::new(12);
-          let src = SOURCE!();
+          let src = SOURCE!(); // SOURCE
           let _y = unsafe { src.read() };
           None::<u8>.unwrap();
       } // SINK
@@ -2219,7 +2217,7 @@
       use std::mem::forget;
       fn main() {
           let x = Box::new(12);
-          let src = SOURCE!();
+          let src = SOURCE!(); // SOURCE
           forget(x);
           let _y = unsafe { src.read() };
           None::<u8>.unwrap();
