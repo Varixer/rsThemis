@@ -21,7 +21,7 @@
           let layout = Layout::new::<usize>();
           let ptr = SOURCE!(); // SOURCE
           unsafe {
-              let _ = *(ptr as *mut usize) + 1; // SINK
+              let _ = *(ptr as *mut usize) + 1; // BAD SINK
               dealloc(ptr, layout);
           }
       }
@@ -36,7 +36,7 @@
           let ptr = SOURCE!(); // SOURCE
           unsafe {
               (ptr as *mut usize).write(0);
-              let _ = *(ptr as *mut usize) + 1;
+              let _ = *(ptr as *mut usize) + 1; // GOOD SINK
               dealloc(ptr, layout);
           }
       }
@@ -62,7 +62,7 @@
           let layout = Layout::new::<usize>();
           let ptr = SOURCE!(); // SOURCE
           unsafe {
-              dealloc(ptr, layout); // SINK
+              dealloc(ptr, layout); // BAD SINK
           }
       }
   NEG:
@@ -75,7 +75,7 @@
           let layout = Layout::new::<usize>();
           let ptr = SOURCE!(); // SOURCE
           unsafe {
-              dealloc(ptr, layout);
+              dealloc(ptr, layout); // GOOD SINK
           }
       }
 
@@ -98,7 +98,7 @@
       fn main() {
           let mut layout = Layout::from_size_align(1, 1).unwrap();
           let mut ptr = SOURCE!(); // SOURCE
-          ptr = unsafe { realloc(ptr, layout, 2) }; // SINK
+          ptr = unsafe { realloc(ptr, layout, 2) }; // BAD SINK
           
           layout = Layout::from_size_align(2, 1).unwrap();
           unsafe { dealloc(ptr, layout) };
@@ -111,7 +111,7 @@
       fn main() {
           let mut layout = Layout::from_size_align(1, 1).unwrap();
           let mut ptr = SOURCE!(); // SOURCE
-          ptr = unsafe { realloc(ptr, layout, 2) };
+          ptr = unsafe { realloc(ptr, layout, 2) }; // GOOD SINK
           
           layout = Layout::from_size_align(2, 1).unwrap();
           unsafe { dealloc(ptr, layout) };
@@ -136,7 +136,7 @@
       fn main() {
           let mut layout = Layout::from_size_align(1, 1).unwrap();
           let ptr = SOURCE!(); // SOURCE
-          let new_ptr = unsafe { realloc(ptr, layout, 2) }; // SINK
+          let new_ptr = unsafe { realloc(ptr, layout, 2) }; // BAD SINK
           
           unsafe { dealloc(ptr, layout) };
           layout = Layout::from_size_align(2, 1).unwrap();
@@ -150,7 +150,7 @@
       fn main() {
           let mut layout = Layout::from_size_align(1, 1).unwrap();
           let ptr = SOURCE!(); // SOURCE
-          let new_ptr = unsafe { realloc(ptr, layout, 2) };
+          let new_ptr = unsafe { realloc(ptr, layout, 2) }; // GOOD SINK
           
           layout = Layout::from_size_align(2, 1).unwrap();
           unsafe { dealloc(new_ptr, layout) };
@@ -179,7 +179,7 @@
       #![feature(new_uninit)]
       fn main() {
           let x = SOURCE!(); // SOURCE
-          let y = unsafe { x.assume_init() }; // SINK
+          let y = unsafe { x.assume_init() }; // BAD SINK
           assert_eq!(*y, 0);
       }
   NEG:
@@ -190,7 +190,7 @@
       fn main() {
           let mut x = SOURCE!(); // SOURCE
           unsafe { x.as_mut_ptr().write(5); }
-          let y = unsafe { x.assume_init() };
+          let y = unsafe { x.assume_init() }; // GOOD SINK
           assert_eq!(*y, 5);
       }
 
@@ -218,7 +218,7 @@
       use std::rc::Rc;
       fn main() {
           let mut x = SOURCE!(); // SOURCE
-          let y = unsafe { x.assume_init() }; // SINK
+          let y = unsafe { x.assume_init() }; // BAD SINK
           assert_eq!(*y, 0);
       }
   NEG:
@@ -230,7 +230,7 @@
       fn main() {
           let mut x = SOURCE!(); // SOURCE
           Rc::get_mut(&mut x).unwrap().write(5);
-          let y = unsafe { x.assume_init() };
+          let y = unsafe { x.assume_init() }; // GOOD SINK
           assert_eq!(*y, 5);
       }
 
@@ -262,7 +262,7 @@
           let ptr = SOURCE!(); // SOURCE
           unsafe {
               Rc::decrement_strong_count(ptr);
-              Rc::decrement_strong_count(ptr); // SINK
+              Rc::decrement_strong_count(ptr); // BAD SINK
           }
       }
   NEG:
@@ -274,7 +274,7 @@
           let x = Rc::new(5usize);
           let ptr = SOURCE!(); // SOURCE
           unsafe {
-              Rc::decrement_strong_count(ptr);
+              Rc::decrement_strong_count(ptr); // GOOD SINK
           }
       }
 
@@ -302,7 +302,7 @@
               let s = String::from("Oh, no!");
               let mut y: Rc<&str> = SOURCE!(); // SOURCE
               unsafe {
-                  *Rc::get_mut_unchecked(&mut y) = &s; // SINK
+                  *Rc::get_mut_unchecked(&mut y) = &s; // BAD SINK
               }
           }
           let _ = x.len();
@@ -319,7 +319,7 @@
           {
               let mut y: Rc<&str> = SOURCE!(); // SOURCE
               unsafe {
-                  *Rc::get_mut_unchecked(&mut y) = &s;
+                  *Rc::get_mut_unchecked(&mut y) = &s; // GOOD SINK
               }
           }
           let _ = x.len();
@@ -350,7 +350,7 @@
           let x = Rc::new(5usize);
           let ptr = SOURCE!(); // SOURCE
           unsafe {
-              Rc::increment_strong_count(ptr); // SINK
+              Rc::increment_strong_count(ptr); // BAD SINK
           }
       }
   NEG:
@@ -362,7 +362,7 @@
           let x = Rc::new(0usize);
           let ptr = SOURCE!(); // SOURCE
           unsafe {
-              Rc::increment_strong_count(ptr);
+              Rc::increment_strong_count(ptr); // GOOD SINK
               Rc::decrement_strong_count(ptr);
               Rc::from_raw(ptr);
           }
@@ -398,7 +398,7 @@
       fn main() {
           let mut buffer: [MaybeUninit<u8>; 3] = SOURCE!(); // SOURCE
           let x = unsafe { IntoIter::new_unchecked(buffer, 0..2) };
-          let _ = x.collect::<Vec<_>>(); // SINK
+          let _ = x.collect::<Vec<_>>(); // BAD SINK
       }
   NEG:
     source: |-
@@ -415,7 +415,7 @@
           buffer[1].write(1);
           buffer[2].write(2);
           let x = unsafe { IntoIter::new_unchecked(buffer, 0..2) };
-          let _ = x.collect::<Vec<_>>();
+          let _ = x.collect::<Vec<_>>(); // GOOD SINK
       }
 
 - description: Dangling pointer access - BO - The range must be in-bounds for the buffer, with initialized.end <= N
@@ -445,7 +445,7 @@
           buffer[2].write(2);
           let range = SOURCE!(); // SOURCE
           let x = unsafe { IntoIter::new_unchecked(buffer, range) };
-          let _ = x.collect::<Vec<_>>(); // SINK
+          let _ = x.collect::<Vec<_>>(); // BAD SINK
       }
   NEG:
     source: |-
@@ -463,7 +463,7 @@
           buffer[2].write(2);
           let range = SOURCE!(); // SOURCE
           let x = unsafe { IntoIter::new_unchecked(buffer, range) };
-          let _ = x.collect::<Vec<_>>();
+          let _ = x.collect::<Vec<_>>(); // GOOD SINK
       }
 
 ## CStr
@@ -486,7 +486,7 @@
 
       fn main() {
           let ptr: *const c_char = SOURCE!(); // SOURCE
-          unsafe { let _ = CStr::from_ptr(ptr); }; // SINK
+          unsafe { let _ = CStr::from_ptr(ptr); }; // BAD SINK
       }
   NEG:
     source: |-
@@ -496,7 +496,7 @@
 
       fn main() {
           let ptr: *const c_char = SOURCE!(); // SOURCE
-          unsafe { let _ = CStr::from_ptr(ptr); };
+          unsafe { let _ = CStr::from_ptr(ptr); }; // GOOD SINK
       }
 
 ## ManuallyDrop
@@ -520,9 +520,9 @@
       fn main() {
           let mut slot: ManuallyDrop<Box<usize>> = SOURCE!(); // SOURCE
           unsafe {
-              ManuallyDrop::drop(&mut slot); // SINK
+              ManuallyDrop::drop(&mut slot);
           }
-          ManuallyDrop::into_inner(slot);
+          ManuallyDrop::into_inner(slot); // BAD SINK
       }
   NEG:
     source: |-
@@ -533,7 +533,7 @@
       fn main() {
           let mut slot: ManuallyDrop<Box<usize>> = SOURCE!(); // SOURCE
           
-          ManuallyDrop::into_inner(slot);
+          ManuallyDrop::into_inner(slot); // GOOD SINK
       }
 
 - description: Dangling pointer access - DF
@@ -556,8 +556,8 @@
 
       fn main() {
           let mut slot = SOURCE!(); // SOURCE
-          unsafe { let _ = ManuallyDrop::take(&mut slot); }; // SINK
-          ManuallyDrop::into_inner(slot);
+          unsafe { let _ = ManuallyDrop::take(&mut slot); };
+          ManuallyDrop::into_inner(slot); // BAD SINK
       }
   NEG:
     source: |-
@@ -569,7 +569,7 @@
       fn main() {
           let mut slot = SOURCE!(); // SOURCE
           
-          ManuallyDrop::into_inner(slot);
+          ManuallyDrop::into_inner(slot); // GOOD SINK
       }
 
 ## MaybeUninit
@@ -602,7 +602,7 @@
           array[1].write(1);
           array[2].write(2);
 
-          let res = unsafe { MaybeUninit::array_assume_init(array) }; // SINK
+          let res = unsafe { MaybeUninit::array_assume_init(array) }; // BAD SINK
       }
   NEG:
     source: |-
@@ -622,7 +622,7 @@
           array[1].write(1);
           array[2].write(2);
 
-          let res = unsafe { MaybeUninit::array_assume_init(array) };
+          let res = unsafe { MaybeUninit::array_assume_init(array) }; // GOOD SINK
       }
 
 - description: Producing an invalid value - Uninitialized
@@ -649,7 +649,7 @@
 
       fn main() {
           let x = SOURCE!(); // SOURCE
-          unsafe { x.assume_init() }; // SINK
+          unsafe { x.assume_init() }; // BAD SINK
       }
   NEG:
     source: |-
@@ -664,7 +664,7 @@
 
       fn main() {
           let x = SOURCE!(); // SOURCE
-          unsafe { x.assume_init() };
+          unsafe { x.assume_init() }; // GOOD SINK
       }
 
 - description: Producing an invalid value - Uninitialized
@@ -691,7 +691,7 @@
 
       fn main() {
           let mut x = SOURCE!(); // SOURCE
-          unsafe { x.assume_init_drop() }; // SINK
+          unsafe { x.assume_init_drop() }; // BAD SINK
       }
   NEG:
     source: |-
@@ -706,7 +706,7 @@
 
       fn main() {
           let mut x = SOURCE!(); // SOURCE
-          unsafe { x.assume_init_drop() };
+          unsafe { x.assume_init_drop() }; // GOOD SINK
       }
 
 - description: Dangling pointer access - UAF
@@ -733,7 +733,7 @@
           unsafe {
               x.assume_init_drop();
           }
-          unsafe { x.assume_init() }; // SINK
+          unsafe { x.assume_init() }; // BAD SINK
       }
   NEG:
     source: |-
@@ -748,7 +748,7 @@
           unsafe {
               x.assume_init_drop();
           }
-      }
+      } // GOOD SINK
 
 - description: Producing an invalid value - Uninitialized
   tags:
@@ -775,7 +775,7 @@
 
       fn main() {
           let mut x = SOURCE!(); // SOURCE
-          unsafe { x.assume_init_mut().set(true); } // SINK
+          unsafe { x.assume_init_mut().set(true); } // BAD SINK
       }
   NEG:
     source: |-
@@ -791,7 +791,7 @@
 
       fn main() {
           let mut x = SOURCE!(); // SOURCE
-          unsafe { x.assume_init_mut().set(true); }
+          unsafe { x.assume_init_mut().set(true); } // GOOD SINK
       }
 
 - description: Producing an invalid value - Uninitialized
@@ -819,7 +819,7 @@
 
       fn main() {
           let mut x = SOURCE!(); // SOURCE
-          unsafe { x.assume_init_read() }; // SINK
+          unsafe { x.assume_init_read() }; // BAD SINK
       }
   NEG:
     source: |-
@@ -835,7 +835,7 @@
 
       fn main() {
           let mut x = SOURCE!(); // SOURCE
-          unsafe { x.assume_init_read() };
+          unsafe { x.assume_init_read() }; // GOOD SINK
       }
 
 - description: Dangling pointer access - UAF
@@ -868,7 +868,7 @@
 
       fn main() {
           let mut x = SOURCE!(); // SOURCE
-          unsafe { x.assume_init_read() }; // SINK
+          unsafe { x.assume_init_read() }; // BAD SINK
       }
   NEG:
     source: |-
@@ -884,7 +884,7 @@
 
       fn main() {
           let mut x = SOURCE!(); // SOURCE
-          unsafe { x.assume_init_read() };
+          unsafe { x.assume_init_read() }; // GOOD SINK
       }
 
 - description: Producing an invalid value - Uninitialized
@@ -912,7 +912,7 @@
 
       fn main() {
           let mut x = SOURCE!(); // SOURCE
-          unsafe { x.assume_init_ref().is_empty() }; // SINK
+          unsafe { x.assume_init_ref().is_empty() }; // BAD SINK
       }
   NEG:
     source: |-
@@ -928,7 +928,7 @@
 
       fn main() {
           let mut x = SOURCE!(); // SOURCE
-          unsafe { x.assume_init_ref().is_empty() };
+          unsafe { x.assume_init_ref().is_empty() }; // GOOD SINK
           unsafe { x.assume_init() };
       }
 
@@ -965,7 +965,7 @@
 
       fn main() {
           let mut array = SOURCE!(); // SOURCE
-          unsafe { MaybeUninit::slice_assume_init_mut(&mut array)[0] }; // SINK
+          unsafe { MaybeUninit::slice_assume_init_mut(&mut array)[0] }; // BAD SINK
       }
   NEG:
     source: |-
@@ -984,7 +984,7 @@
 
       fn main() {
           let mut array = SOURCE!(); // SOURCE
-          unsafe { MaybeUninit::slice_assume_init_mut(&mut array)[0] };
+          unsafe { MaybeUninit::slice_assume_init_mut(&mut array)[0] }; // GOOD SINK
       }
 
 - description: Producing an invalid value - Uninitialized
@@ -1020,7 +1020,7 @@
 
       fn main() {
           let mut array = SOURCE!(); // SOURCE
-          unsafe { MaybeUninit::slice_assume_init_ref(&mut array)[0] }; // SINK
+          unsafe { MaybeUninit::slice_assume_init_ref(&mut array)[0] }; // BAD SINK
       }
   NEG:
     source: |-
@@ -1039,7 +1039,7 @@
 
       fn main() {
           let mut array = SOURCE!(); // SOURCE
-          unsafe { MaybeUninit::slice_assume_init_ref(&mut array)[0] };
+          unsafe { MaybeUninit::slice_assume_init_ref(&mut array)[0] }; // GOOD SINK
       }
 
 ## Range
@@ -1064,7 +1064,7 @@
           let x = String::from("111");
           let ptr = x.as_str() as *const str;
           let range = SOURCE!(); // SOURCE
-          unsafe { range.get_unchecked(ptr); } // SINK
+          unsafe { range.get_unchecked(ptr); } // BAD SINK
       }
   NEG:
     source: |-
@@ -1076,7 +1076,7 @@
           let x = String::from("111");
           let ptr = x.as_str() as *const str;
           let range = SOURCE!(); // SOURCE
-          unsafe { range.get_unchecked(ptr); }
+          unsafe { range.get_unchecked(ptr); } // GOOD SINK
       }
 
 - description: Dangling pointer access - UAF - Calling this method with a dangling slice pointer is undefined behavior
@@ -1105,7 +1105,7 @@
           let x = String::from("111");
           let ptr = SOURCE!(); // SOURCE
           let range = 0..2;
-          unsafe { range.get_unchecked(ptr).as_ref(); } // SINK
+          unsafe { range.get_unchecked(ptr).as_ref(); } // BAD SINK
       }
   NEG:
     source: |-
@@ -1117,7 +1117,7 @@
           let x = String::from("111");
           let ptr = SOURCE!(); // SOURCE
           let range = 0..2;
-          unsafe { range.get_unchecked(ptr).as_ref(); }
+          unsafe { range.get_unchecked(ptr).as_ref(); } // GOOD SINK
       }
 
 - description: Dangling pointer access - BO - Calling this method with an out-of-bounds index is undefined behavior
@@ -1141,7 +1141,7 @@
           let mut x = String::from("111");
           let ptr = x.as_mut_str() as *mut str;
           let range = SOURCE!(); // SOURCE
-          unsafe { range.get_unchecked_mut(ptr).as_ref(); } // SINK
+          unsafe { range.get_unchecked_mut(ptr).as_ref(); } // BAD SINK
       }
   NEG:
     source: |-
@@ -1153,7 +1153,7 @@
           let mut x = String::from("111");
           let ptr = x.as_mut_str() as *mut str;
           let range = SOURCE!(); // SOURCE
-          unsafe { range.get_unchecked_mut(ptr).as_ref(); }
+          unsafe { range.get_unchecked_mut(ptr).as_ref(); } // GOOD SINK
       }
 
 - description: Dangling pointer access - UAF - Calling this method with a dangling slice pointer is undefined behavior
@@ -1182,7 +1182,7 @@
           let mut x = String::from("111");
           let ptr = SOURCE!(); // SOURCE
           let range = 0..2;
-          unsafe { range.get_unchecked_mut(ptr).as_ref(); } // SINK
+          unsafe { range.get_unchecked_mut(ptr).as_ref(); } // BAD SINK
       }
   NEG:
     source: |-
@@ -1194,7 +1194,7 @@
           let mut x = String::from("111");
           let ptr = SOURCE!(); // SOURCE
           let range = 0..2;
-          unsafe { range.get_unchecked_mut(ptr).as_ref(); }
+          unsafe { range.get_unchecked_mut(ptr).as_ref(); } // GOOD SINK
       }
 
 ## Primitive
@@ -1217,7 +1217,7 @@
       fn main() {
           let x = SOURCE!(); // SOURCE
           let ptr = x.as_ptr();
-          unsafe { *ptr.add(3); } // SINK
+          unsafe { *ptr.add(3); } // BAD SINK
       }
   NEG:
     source: |-
@@ -1226,7 +1226,7 @@
       fn main() {
           let x = SOURCE!(); // SOURCE
           let ptr = x.as_ptr();
-          unsafe { *ptr.add(2); }
+          unsafe { *ptr.add(2); } // GOOD SINK
       }
 
 - description: Dangling pointer access - UAF
@@ -1249,7 +1249,7 @@
           let x = Box::new(0usize);
           let ptr = SOURCE!(); // SOURCE
           unsafe { Box::from_raw(ptr); }
-          unsafe { ptr.as_mut(); } // SINK
+          unsafe { ptr.as_mut(); } // BAD SINK
       }
   NEG:
     source: |-
@@ -1259,7 +1259,7 @@
           let x = Box::new(0usize);
           let ptr = SOURCE!(); // SOURCE
           unsafe { ptr.as_mut(); }
-          unsafe { Box::from_raw(ptr); }
+          unsafe { Box::from_raw(ptr); } // GOOD SINK
       }
 
 - description: Dangling pointer access - UAF
@@ -1282,7 +1282,7 @@
           let x = Box::new(0usize);
           let ptr = SOURCE!(); // SOURCE
           unsafe { Box::from_raw(ptr); }
-          unsafe { ptr.as_ref(); } // SINK
+          unsafe { ptr.as_ref(); } // BAD SINK
       }
   NEG:
     source: |-
@@ -1292,7 +1292,7 @@
           let x = Box::new(0usize);
           let ptr = SOURCE!(); // SOURCE
           unsafe { ptr.as_ref(); }
-          unsafe { Box::from_raw(ptr); }
+          unsafe { Box::from_raw(ptr); } // GOOD SINK
       }
 
 - description: Dangling pointer access - UAF
@@ -1316,7 +1316,7 @@
           let x = Box::new(0usize);
           let ptr = SOURCE!(); // SOURCE
           unsafe { Box::from_raw(ptr); }
-          unsafe { ptr.as_uninit_mut(); } // SINK
+          unsafe { ptr.as_uninit_mut(); } // BAD SINK
       }
   NEG:
     source: |-
@@ -1326,7 +1326,7 @@
       fn main() {
           let x = Box::new(0usize);
           let ptr = SOURCE!(); // SOURCE
-          unsafe { ptr.as_uninit_mut(); }
+          unsafe { ptr.as_uninit_mut(); } // GOOD SINK
           unsafe { Box::from_raw(ptr); }
       }
 
@@ -1351,7 +1351,7 @@
           let x = Box::new(0usize);
           let ptr = SOURCE!(); // SOURCE
           unsafe { Box::from_raw(ptr); }
-          unsafe { ptr.as_uninit_ref(); } // SINK
+          unsafe { ptr.as_uninit_ref(); } // BAD SINK
       }
   NEG:
     source: |-
@@ -1361,7 +1361,7 @@
       fn main() {
           let x = Box::new(0usize);
           let ptr = SOURCE!(); // SOURCE
-          unsafe { ptr.as_uninit_ref(); }
+          unsafe { ptr.as_uninit_ref(); } // GOOD SINK
           unsafe { Box::from_raw(ptr); }
       }
 
@@ -1384,7 +1384,7 @@
       fn main() {
           let x = SOURCE!(); // SOURCE
           let ptr = x.as_ptr();
-          unsafe { *ptr.byte_add(12); } // SINK
+          unsafe { *ptr.byte_add(12); } // BAD SINK
       }
   NEG:
     source: |-
@@ -1394,7 +1394,7 @@
       fn main() {
           let x = SOURCE!(); // SOURCE
           let ptr = x.as_ptr();
-          unsafe { *ptr.byte_add(8); }
+          unsafe { *ptr.byte_add(8); } // GOOD SINK
       }
 
 - description: Dangling pointer access - BO
@@ -1416,7 +1416,7 @@
       fn main() {
           let x = SOURCE!(); // SOURCE
           let ptr = x.as_ptr();
-          unsafe { *ptr.byte_offset(12); } // SINK
+          unsafe { *ptr.byte_offset(12); } // BAD SINK
       }
   NEG:
     source: |-
@@ -1426,7 +1426,7 @@
       fn main() {
           let x = SOURCE!(); // SOURCE
           let ptr = x.as_ptr();
-          unsafe { *ptr.byte_offset(8); }
+          unsafe { *ptr.byte_offset(8); } // GOOD SINK
       }
 
 - description: Dangling pointer access - BO
@@ -1447,7 +1447,7 @@
       fn main() {
           let x = SOURCE!(); // SOURCE
           let ptr = x.as_ptr();
-          unsafe { *ptr.offset(3); } // SINK
+          unsafe { *ptr.offset(3); } // BAD SINK
       }
   NEG:
     source: |-
@@ -1456,7 +1456,7 @@
       fn main() {
           let x = SOURCE!(); // SOURCE
           let ptr = x.as_ptr();
-          unsafe { *ptr.offset(2); }
+          unsafe { *ptr.offset(2); } // GOOD SINK
       }
 
 - description: Dangling pointer access - DF
@@ -1482,8 +1482,8 @@
           let mut y = Box::new(0);
           let src = &x as *const Box<i32>;
           let dst = SOURCE!(); // SOURCE
-          unsafe { dst.copy_from(src, 1); } // SINK
-      }
+          unsafe { dst.copy_from(src, 1); }
+      } // BAD SINK
   NEG:
     source: |-
       &mut y as *mut Box<i32>
@@ -1497,7 +1497,7 @@
           let dst = SOURCE!(); // SOURCE
           unsafe { dst.copy_from(src, 1); }
           forget(y);
-      }
+      } // GOOD SINK
 
 - description: Dangling pointer access - DF
   tags:
@@ -1522,8 +1522,8 @@
           let mut y = Box::new(0);
           let src = &x as *const Box<i32>;
           let dst = SOURCE!(); // SOURCE
-          unsafe { dst.copy_from_nonoverlapping(src, 1); } // SINK
-      }
+          unsafe { dst.copy_from_nonoverlapping(src, 1); }
+      } // BAD SINK
   NEG:
     source: |-
       &mut y as *mut Box<i32>
@@ -1537,7 +1537,7 @@
           let dst = SOURCE!(); // SOURCE
           unsafe { dst.copy_from_nonoverlapping(src, 1); }
           forget(y);
-      }
+      } // GOOD SINK
 
 - description: Dangling pointer access - DF
   tags:
@@ -1562,8 +1562,8 @@
           let mut y = Box::new(0);
           let src = &x as *const Box<i32>;
           let dst = SOURCE!(); // SOURCE
-          unsafe { src.copy_to(dst, 1); } // SINK
-      }
+          unsafe { src.copy_to(dst, 1); }
+      } // BAD SINK
   NEG:
     source: |-
       &mut y as *mut Box<i32>
@@ -1577,7 +1577,7 @@
           let dst = SOURCE!(); // SOURCE
           unsafe { src.copy_to(dst, 1); }
           forget(y);
-      }
+      } // GOOD SINK
 
 - description: Dangling pointer access - DF
   tags:
@@ -1602,8 +1602,8 @@
           let mut y = Box::new(0);
           let src = &x as *const Box<i32>;
           let dst = SOURCE!(); // SOURCE
-          unsafe { src.copy_to_nonoverlapping(dst, 1); } // SINK
-      }
+          unsafe { src.copy_to_nonoverlapping(dst, 1); }
+      } // BAD SINK
   NEG:
     source: |-
       &mut y as *mut Box<i32>
@@ -1617,7 +1617,7 @@
           let dst = SOURCE!(); // SOURCE
           unsafe { src.copy_to_nonoverlapping(dst, 1); }
           forget(y);
-      }
+      } // GOOD SINK
 
 - description: Dangling pointer access - DF
   tags:
@@ -1641,9 +1641,9 @@
           let mut x = Box::new(1);
           let ptr = SOURCE!(); // SOURCE
           unsafe {
-              ptr.drop_in_place(); // SINK
+              ptr.drop_in_place();
           }
-      }
+      } // BAD SINK
   NEG:
     source: |-
       &mut x as *mut Box<i32>
@@ -1657,7 +1657,7 @@
           unsafe {
               ptr.drop_in_place();
           }
-      }
+      } // GOOD SINK
 
 - description: Dangling pointer access - UAF
   tags:
@@ -1682,7 +1682,7 @@
       fn main() {
           let x = Box::new(12);
           let src = SOURCE!(); // SOURCE
-          unsafe { forget(src.read()); } // SINK
+          unsafe { forget(src.read()); } // BAD SINK
       }
   NEG:
     source: |-
@@ -1692,7 +1692,7 @@
       fn main() {
           let x = Box::new(12);
           let src = SOURCE!(); // SOURCE
-          unsafe { forget(src.read()); }
+          unsafe { forget(src.read()); } // GOOD SINK
       }
 
 - description: Dangling pointer access - DF
@@ -1715,7 +1715,7 @@
       fn main() {
           let x = Box::new(12);
           let src = SOURCE!(); // SOURCE
-          unsafe { src.read(); } // SINK
+          unsafe { src.read(); } // BAD SINK
       }
   NEG:
     source: |-
@@ -1725,7 +1725,7 @@
       fn main() {
           let x = Box::new(12);
           let src = SOURCE!(); // SOURCE
-          unsafe { forget(src.read()); }
+          unsafe { forget(src.read()); } // GOOD SINK
       }
 
 ## slice
@@ -1751,7 +1751,7 @@
           let x = Vec::from([1usize; 2]);
           let ptr = SOURCE!(); // SOURCE
           drop(x);
-          unsafe { slice::from_raw_parts(ptr, 2) }; // SINK
+          unsafe { slice::from_raw_parts(ptr, 2) }; // BAD SINK
       }
   NEG:
     source: |-
@@ -1763,7 +1763,7 @@
           let x = Vec::from([1usize; 2]);
           let ptr = SOURCE!(); // SOURCE
           
-          unsafe { slice::from_raw_parts(ptr, 2) };
+          unsafe { slice::from_raw_parts(ptr, 2) }; // GOOD SINK
       }
 
 - description: Dangling pointer access - UAF
@@ -1788,7 +1788,7 @@
           let mut x = Vec::from([1usize; 2]);
           let ptr = SOURCE!(); // SOURCE
           drop(x);
-          unsafe { slice::from_raw_parts_mut(ptr, 2) }; // SINK
+          unsafe { slice::from_raw_parts_mut(ptr, 2) }; // BAD SINK
       }
   NEG:
     source: |-
@@ -1800,7 +1800,7 @@
           let mut x = Vec::from([1usize; 2]);
           let ptr = SOURCE!(); // SOURCE
           
-          unsafe { slice::from_raw_parts_mut(ptr, 2) };
+          unsafe { slice::from_raw_parts_mut(ptr, 2) }; // GOOD SINK
       }
 
 - description: Dangling pointer access - UAF
@@ -1826,7 +1826,7 @@
           let x = Vec::from([1usize; 2]);
           let range = SOURCE!(); // SOURCE
           drop(x);
-          unsafe { slice::from_ptr_range(range) }; // SINK
+          unsafe { slice::from_ptr_range(range) }; // BAD SINK
       }
   NEG:
     source: |-
@@ -1839,7 +1839,7 @@
           let x = Vec::from([1usize; 2]);
           let range = SOURCE!(); // SOURCE
           
-          unsafe { slice::from_ptr_range(range) };
+          unsafe { slice::from_ptr_range(range) }; // GOOD SINK
       }
 
 - description: Dangling pointer access - UAF
@@ -1866,7 +1866,7 @@
           
           let range = SOURCE!(); // SOURCE
           drop(x);
-          unsafe { slice::from_mut_ptr_range(range) }; // SINK
+          unsafe { slice::from_mut_ptr_range(range) }; // BAD SINK
       }
   NEG:
     source: |-
@@ -1879,7 +1879,7 @@
           let mut x = Vec::from([1usize; 2]);
           let range = SOURCE!(); // SOURCE
           
-          unsafe { slice::from_mut_ptr_range(range) };
+          unsafe { slice::from_mut_ptr_range(range) }; // GOOD SINK
       }
 
 # Panic-PoC
@@ -1912,7 +1912,7 @@
           };
           None::<u8>.unwrap();
           y.as_ref();
-      } // SINK
+      } // BAD SINK
   NEG:
     source: |-
       MaybeUninit::<Box<usize>>::uninit()
@@ -1927,7 +1927,7 @@
           };
           None::<u8>.unwrap();
           y.as_ref();
-      }
+      } // GOOD SINK
 
 - description: Dangling pointer access - DF
   tags:
@@ -1953,7 +1953,7 @@
           let x = unsafe { ManuallyDrop::take(&mut slot) };
           let _y = ManuallyDrop::into_inner(slot);
           None::<u8>.unwrap();
-      } // SINK
+      } // BAD SINK
   NEG:
     source: |-
       ManuallyDrop::<Box<usize>>::new(Box::new(1))
@@ -1967,7 +1967,7 @@
           forget(x);
           let _y = ManuallyDrop::into_inner(slot);
           None::<u8>.unwrap();
-      }
+      } // GOOD SINK
 
 - description: Dangling pointer access - DF
   tags:
@@ -1996,7 +1996,7 @@
           unsafe { dst.copy_from(src, 1); }
           None::<u8>.unwrap();
           forget(x);
-      } // SINK
+      } // BAD SINK
   NEG:
     source: |-
       &mut y as *mut Box<i32>
@@ -2011,7 +2011,7 @@
           unsafe { dst.copy_from(src, 1); }
           
           forget(x);
-      }
+      } // GOOD SINK
 
 - description: Dangling pointer access - DF
   tags:
@@ -2040,7 +2040,7 @@
           unsafe { dst.copy_from_nonoverlapping(src, 1); }
           None::<u8>.unwrap();
           forget(x);
-      } // SINK
+      } // BAD SINK
   NEG:
     source: |-
       &mut y as *mut Box<i32>
@@ -2055,7 +2055,7 @@
           unsafe { dst.copy_from_nonoverlapping(src, 1); }
           
           forget(x);
-      }
+      } // GOOD SINK
 
 - description: Dangling pointer access - DF
   tags:
@@ -2084,7 +2084,7 @@
           unsafe { src.copy_to(dst, 1); }
           None::<u8>.unwrap();
           forget(x);
-      } // SINK
+      } // BAD SINK
   NEG:
     source: |-
       &mut y as *mut Box<i32>
@@ -2099,7 +2099,7 @@
           unsafe { src.copy_to(dst, 1); }
           
           forget(x);
-      }
+      } // GOOD SINK
 
 - description: Dangling pointer access - DF
   tags:
@@ -2128,7 +2128,7 @@
           unsafe { src.copy_to_nonoverlapping(dst, 1); }
           None::<u8>.unwrap();
           forget(x);
-      } // SINK
+      } // BAD SINK
   NEG:
     source: |-
       &mut y as *mut Box<i32>
@@ -2143,7 +2143,7 @@
           unsafe { src.copy_to_nonoverlapping(dst, 1); }
           
           forget(x);
-      }
+      } // GOOD SINK
 
 - description: Dangling pointer access - DF
   tags:
@@ -2170,7 +2170,7 @@
               ptr.drop_in_place();
           }
           None::<u8>.unwrap(); 
-      } // SINK
+      } // BAD SINK
   NEG:
     source: |-
       &mut x as *mut Box<i32>
@@ -2185,7 +2185,7 @@
               ptr.drop_in_place();
           }
           None::<u8>.unwrap();
-      }
+      } // GOOD SINK
 
 - description: Dangling pointer access - DF
   tags:
@@ -2209,7 +2209,7 @@
           let src = SOURCE!(); // SOURCE
           let _y = unsafe { src.read() };
           None::<u8>.unwrap();
-      } // SINK
+      } // BAD SINK
   NEG:
     source: |-
       &x as *const Box<i32>
@@ -2221,4 +2221,4 @@
           forget(x);
           let _y = unsafe { src.read() };
           None::<u8>.unwrap();
-      }
+      } // GOOD SINK
