@@ -16,6 +16,10 @@
     let tuple: (TYPE!(), String) = (SOURCE!(), String::from("Hello, world!"));
     tuple.0
 
+# - name: Shared slice
+#   code: |-
+#     let mut slice: &[TYPE!()] = &[SOURCE!(), VALUE!()][..];
+#     std::mem::replace(&mut slice[0], VALUE!())
 
 - name: Mutable slice
   code: |-
@@ -195,3 +199,13 @@
         i = i + 1;
     }
     param
+
+# - name: Array(copy)
+#   tags:
+#     - Data flow
+#   features:
+#     - Array Initialization
+#     - Index Access
+#   code: |-
+#     let array = [SOURCE!(); 32];
+#     array[0]

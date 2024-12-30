@@ -1,5 +1,37 @@
 # SP-PoC
 ## System
+- description: Creating allocation with size 0
+  tags:
+    - SP(Sized)
+    - UB(Creating allocation with size 0)
+    - CQ()
+  features:
+    - Function std::alloc::alloc
+  type: |-
+    Layout
+  value: |-
+    Layout::from_size_align(1, 1).unwrap()
+  POS:
+    source: |-
+      Layout::from_size_align(0, 1).unwrap()
+    code: |-
+      use std::alloc::{alloc, dealloc, Layout};
+      fn main() {
+          let layout = SOURCE!();
+          let ptr = unsafe { alloc(layout) }; // SINK
+          unsafe { dealloc(ptr, layout) };
+      }
+  NEG:
+    source: |-
+      Layout::from_size_align(1, 1).unwrap()
+    code: |-
+      use std::alloc::{alloc, dealloc, Layout};
+      fn main() {
+          let layout = SOURCE!();
+          let ptr = unsafe { alloc(layout) };
+          unsafe { dealloc(ptr, layout) };
+      }
+
 - description: Producing an invalid value - Uninitialized
   tags:
     - SP(Initialized)
@@ -41,6 +73,126 @@
           }
       }
 
+- description: Creating allocation with size 0
+  tags:
+    - SP(Sized)
+    - UB(Creating allocation with size 0)
+    - CQ()
+  features:
+    - Function std::alloc::alloc_zeroed
+  type: |-
+    Layout
+  value: |-
+    Layout::from_size_align(1, 1).unwrap()
+  POS:
+    source: |-
+      Layout::from_size_align(0, 1).unwrap()
+    code: |-
+      use std::alloc::{alloc_zeroed, dealloc, Layout};
+      fn main() {
+          let layout = SOURCE!();
+          let ptr = unsafe { alloc_zeroed(layout) }; // SINK
+          unsafe { dealloc(ptr, layout) };
+      }
+  NEG:
+    source: |-
+      Layout::from_size_align(1, 1).unwrap()
+    code: |-
+      use std::alloc::{alloc_zeroed, dealloc, Layout};
+      fn main() {
+          let layout = SOURCE!();
+          let ptr = unsafe { alloc_zeroed(layout) };
+          unsafe { dealloc(ptr, layout) };
+      }
+
+- description: Producing an invalid value
+  tags:
+    - SP(Untyped)
+    - UB(Producing an invalid value)
+    - CQ()
+  features:
+    - Function std::alloc::alloc_zeroed
+  type: |-
+    *mut u8
+  value: |-
+    &mut NonZeroUsize::new(1).unwrap() as *mut NonZeroUsize as *mut u8
+  POS:
+    source: |-
+      unsafe { alloc_zeroed(layout) }
+    code: |-
+      use std::{
+          alloc::{alloc_zeroed, dealloc, Layout},
+          num::NonZeroUsize,
+      };
+
+      fn main() {
+          let layout = Layout::new::<NonZeroUsize>();
+          let ptr = SOURCE!();
+
+          unsafe {
+              let _ = (*(ptr as *mut NonZeroUsize)).get(); // SINK
+              dealloc(ptr, layout);
+          }
+      }
+  NEG:
+    source: |-
+      unsafe { alloc_zeroed(layout) }
+    code: |-
+      use std::{
+          alloc::{alloc_zeroed, dealloc, Layout},
+          num::NonZeroUsize,
+      };
+
+      fn main() {
+          let layout = Layout::new::<NonZeroUsize>();
+          let ptr = SOURCE!();
+
+          unsafe {
+              (ptr as *mut usize).write(1);
+              let _ = (*(ptr as *mut NonZeroUsize)).get();
+              dealloc(ptr, layout);
+          }
+      }
+
+- description: Incorrect layout on deallocation
+  tags:
+    - SP(Fitted)
+    - UB(Incorrect layout on deallocation)
+    - CQ()
+  features:
+    - Function std::alloc::dealloc
+  type: |-
+    Layout
+  value: |-
+    Layout::new::<usize>()
+  POS:
+    source: |-
+      Layout::new::<usize>()
+    code: |-
+      use std::alloc::{alloc, dealloc, Layout};
+
+      fn main() {
+          let mut layout = SOURCE!();
+          let ptr = unsafe { alloc(layout) };
+          layout = Layout::new::<u8>();
+          unsafe {
+              dealloc(ptr, layout); // SINK
+          }
+      }
+  NEG:
+    source: |-
+      Layout::new::<usize>()
+    code: |-
+      use std::alloc::{alloc, dealloc, Layout};
+
+      fn main() {
+          let layout = SOURCE!();
+          let ptr = unsafe { alloc(layout) };
+          unsafe {
+              dealloc(ptr, layout);
+          }
+      }
+
 - description: Dangling pointer access - NPD
   tags:
     - SP(Non-Null)
@@ -77,6 +229,80 @@
           unsafe {
               dealloc(ptr, layout);
           }
+      }
+
+- description: Incorrect layout on deallocation
+  tags:
+    - SP(Fitted)
+    - UB(Incorrect layout on deallocation)
+    - CQ()
+  features:
+    - Function std::alloc::realloc
+  type: |-
+    Layout
+  value: |-
+    Layout::from_size_align(1, 1).unwrap()
+  POS:
+    source: |-
+      Layout::from_size_align(1, 2).unwrap()
+    code: |-
+      use std::alloc::{alloc, dealloc, realloc, Layout};
+      fn main() {
+          let mut layout = Layout::from_size_align(1, 1).unwrap();
+          let mut ptr = unsafe { alloc(layout) };
+          layout = SOURCE!();
+          ptr = unsafe { realloc(ptr, layout, 2) }; // SINK
+          unsafe { dealloc(ptr, layout) };
+      }
+  NEG:
+    source: |-
+      Layout::from_size_align(1, 1).unwrap()
+    code: |-
+      use std::alloc::{alloc, dealloc, realloc, Layout};
+      fn main() {
+          let mut layout = SOURCE!();
+          let mut ptr = unsafe { alloc(layout) };
+          ptr = unsafe { realloc(ptr, layout, 2) };
+          layout = Layout::from_size_align(2, 1).unwrap();
+          unsafe { dealloc(ptr, layout) };
+      }
+
+- description: Creating allocation with size 0
+  tags:
+    - SP(Bounded)
+    - UB(Creating allocation with size 0)
+    - CQ()
+  features:
+    - Function std::alloc::realloc
+  type: |-
+    usize
+  value: |-
+    1
+  POS:
+    source: |-
+      0
+    code: |-
+      use std::alloc::{alloc, dealloc, realloc, Layout};
+      fn main() {
+          let layout = Layout::from_size_align(1, 1).unwrap();
+          let mut ptr = unsafe { alloc(layout) };
+          let new_size = SOURCE!();
+          ptr = unsafe { realloc(ptr, layout, new_size) }; // SINK
+          
+          unsafe { dealloc(ptr, layout) };
+      }
+  NEG:
+    source: |-
+      2
+    code: |-
+      use std::alloc::{alloc, dealloc, realloc, Layout};
+      fn main() {
+          let mut layout = Layout::from_size_align(1, 1).unwrap();
+          let mut ptr = unsafe { alloc(layout) };
+          let new_size = SOURCE!();
+          ptr = unsafe { realloc(ptr, layout, new_size) };
+          layout = Layout::from_size_align(new_size, 1).unwrap();
+          unsafe { dealloc(ptr, layout) };
       }
 
 - description: Dangling pointer access - NPD
@@ -156,6 +382,51 @@
           unsafe { dealloc(new_ptr, layout) };
       }
 
+## HashMap
+- description: Breaking the pointer aliasing rules - The value may have multiple mutable references
+  tags:
+    - SP(Alised)
+    - UB(Breaking the pointer aliasing rules)
+    - CQ()
+  features:
+    - Function std::collections::hash::map::HashMap::get_many_unchecked_mut
+  type: |-
+    [&'static str; 2]
+  value: |-
+    ["111", "111"]
+  POS:
+    source: |-
+      ["111", "111"]
+    code: |-
+      #![feature(map_many_mut)]
+      use std::collections::HashMap;
+
+      fn main() {
+          let mut libraries = HashMap::new();
+          libraries.insert("111".to_string(), 1602);
+          libraries.insert("222".to_string(), 1807);
+          libraries.insert("333".to_string(), 1691);
+          libraries.insert("444".to_string(), 1800);
+          let ks = SOURCE!();
+          unsafe { let _ = libraries.get_many_unchecked_mut(ks); }; // SINK
+      }
+  NEG:
+    source: |-
+      ["111", "222"]
+    code: |-
+      #![feature(map_many_mut)]
+      use std::collections::HashMap;
+
+      fn main() {
+          let mut libraries = HashMap::new();
+          libraries.insert("111".to_string(), 1602);
+          libraries.insert("222".to_string(), 1807);
+          libraries.insert("333".to_string(), 1691);
+          libraries.insert("444".to_string(), 1800);
+          let ks = SOURCE!();
+          unsafe { let _ = libraries.get_many_unchecked_mut(ks); };
+      }
+
 ## Box
 - description: Producing an invalid value - Uninitialized
   tags:
@@ -192,6 +463,112 @@
           unsafe { x.as_mut_ptr().write(5); }
           let y = unsafe { x.assume_init() };
           assert_eq!(*y, 5);
+      }
+
+- description: Producing an invalid value
+  tags:
+    - SP(Untyped)
+    - UB(Producing an invalid value)
+    - CQ()
+  features:
+    - Method std::boxed::Box::downcast_unchecked
+  type: |-
+    Box<dyn std::any::Any>
+  value: |-
+    Box::new(0_usize) as Box<dyn std::any::Any>
+  POS:
+    source: |-
+      Box::new(0_usize) as Box<dyn std::any::Any>
+    code: |-
+      #![feature(downcast_unchecked)]
+      use std::num::NonZeroUsize;
+      fn main() {
+          let x: Box<dyn std::any::Any> = SOURCE!();
+          unsafe {
+              x.downcast_unchecked::<NonZeroUsize>().get(); // SINK
+          }
+      }
+  NEG:
+    source: |-
+      Box::new(0_usize) as Box<dyn std::any::Any>
+    code: |-
+      #![feature(downcast_unchecked)]
+      fn main() {
+          let x: Box<dyn std::any::Any> = SOURCE!();
+          unsafe {
+              assert_eq!(*x.downcast_unchecked::<usize>(), 0);
+          }
+      }
+
+## Cstring
+- description: Producing an invalid value
+  tags:
+    - SP(Encoded)
+    - UB(Producing an invalid value)
+    - CQ()
+  features:
+    - Method std::ffi::CString::from_vec_unchecked
+  type: |-
+    Vec<u8>
+  value: |-
+    b"foo".to_vec()
+  POS:
+    source: |-
+      b"fo\0o".to_vec()
+    code: |-
+      use std::ffi::CString;
+      fn main() {
+          let x = SOURCE!();
+          unsafe {
+              CString::from_vec_unchecked(x); // SINK
+          }
+      }
+  NEG:
+    source: |-
+      b"foo".to_vec()
+    code: |-
+      use std::ffi::CString;
+      fn main() {
+          let x = SOURCE!();
+          unsafe {
+              CString::from_vec_unchecked(x);
+          }
+      }
+
+- description: Producing an invalid value
+  tags:
+    - SP(Encoded)
+    - UB(Producing an invalid value)
+    - CQ()
+  features:
+    - Method std::ffi::CString::from_vec_with_nul_unchecked
+  type: |-
+    Vec<u8>
+  value: |-
+    b"foo\0".to_vec()
+  POS:
+    source: |-
+      b"foo".to_vec()
+    code: |-
+      #![feature(cstring_from_vec_with_nul)]
+      use std::ffi::CString;
+      fn main() {
+          let x = SOURCE!();
+          unsafe {
+              CString::from_vec_with_nul_unchecked(x); // SINK
+          }
+      }
+  NEG:
+    source: |-
+      b"foo\0".to_vec()
+    code: |-
+      #![feature(cstring_from_vec_with_nul)]
+      use std::ffi::CString;
+      fn main() {
+          let x = SOURCE!();
+          unsafe {
+              CString::from_vec_with_nul_unchecked(x);
+          }
       }
 
 ## Rc
@@ -368,6 +745,131 @@
           }
       }
 
+## str
+- description: Producing an invalid value
+  tags:
+    - SP(Encoded)
+    - UB(Producing an invalid value)
+    - CQ()
+  features:
+    - Function alloc::str::from_boxed_utf8_unchecked
+  type: |-
+    Box<[u8]>
+  value: |-
+    Box::new([240, 159, 146, 150])
+  POS:
+    source: |-
+      Box::new([0, 159, 146, 150])
+    code: |-
+      use std::str;
+      fn main() {
+          let x: Box<[u8]> = SOURCE!();
+          unsafe {
+              let _ = str::from_boxed_utf8_unchecked(x); // SINK
+          }
+      }
+  NEG:
+    source: |-
+      Box::new([240, 159, 146, 150])
+    code: |-
+      use std::str;
+      fn main() {
+          let x: Box<[u8]> = SOURCE!();
+          unsafe {
+              let _ = str::from_boxed_utf8_unchecked(x);
+          }
+      }
+
+## String
+- description: Producing an invalid value
+  tags:
+    - SP(Encoded)
+    - UB(Producing an invalid value)
+    - CQ()
+  features:
+    - Method alloc::string::String::from_utf8_unchecked
+  type: |-
+    Vec<u8>
+  value: |-
+    vec![240u8, 159, 146, 150]
+  POS:
+    source: |-
+      vec![0u8, 159, 146, 150]
+    code: |-
+      fn main() {
+          let x = SOURCE!();
+          unsafe { let _ = String::from_utf8_unchecked(x); }; // SINK
+      }
+  NEG:
+    source: |-
+      vec![240u8, 159, 146, 150]
+    code: |-
+      fn main() {
+          let x = SOURCE!();
+          unsafe { let _ = String::from_utf8_unchecked(x); };
+      }
+
+## Layout
+- description: Producing an invalid value - align must not be zero
+  tags:
+    - SP(Numberical)
+    - UB(Producing an invalid value)
+    - CQ()
+  features:
+    - Method core::alloc::layout::Layout::from_size_align_unchecked
+  type: |-
+    usize
+  value: |-
+    1
+  POS:
+    source: |-
+      0
+    code: |-
+      use std::alloc::Layout;
+      fn main() {
+          let align = SOURCE!();
+          unsafe { let _ = Layout::from_size_align_unchecked(1, align); }; // SINK
+      }
+  NEG:
+    source: |-
+      1
+    code: |-
+      use std::alloc::Layout;
+      fn main() {
+          let align = SOURCE!();
+          unsafe { let _ = Layout::from_size_align_unchecked(1, align); };
+      }
+
+- description: Producing an invalid value - align must be a power of two
+  tags:
+    - SP(Numberical)
+    - UB(Producing an invalid value)
+    - CQ()
+  features:
+    - Method core::alloc::layout::Layout::from_size_align_unchecked
+  type: |-
+    usize
+  value: |-
+    1
+  POS:
+    source: |-
+      3
+    code: |-
+      use std::alloc::Layout;
+      fn main() {
+          let align = SOURCE!();
+          unsafe { let _ = Layout::from_size_align_unchecked(1, align); }; // SINK
+      }
+  NEG:
+    source: |-
+      1
+    code: |-
+      use std::alloc::Layout;
+      fn main() {
+          let align = SOURCE!();
+          unsafe { let _ = Layout::from_size_align_unchecked(1, align); };
+      }
+
 ## Into_iter
 - description: Producing an invalid value - Uninitialized
   tags:
@@ -466,7 +968,139 @@
           let _ = x.collect::<Vec<_>>();
       }
 
+## RefCell
+- description: Breaking the pointer aliasing rules - The value may simultaneously have mutable and shared references
+  tags:
+    - SP(Alised)
+    - UB(Breaking the pointer aliasing rules)
+    - CQ()
+  features:
+    - Method core::cell::RefCell::try_borrow_unguarded
+  type: |-
+    RefCell<usize>
+  value: |-
+    RefCell::new(10usize)
+  POS:
+    source: |-
+      RefCell::new(5usize)
+    code: |-
+      use std::cell::RefCell;
+
+      fn main() {
+          let x = SOURCE!();
+          let y = unsafe { x.try_borrow_unguarded().unwrap() };
+          *x.borrow_mut() = 10; // SINK
+          let _ = *y + 1;
+      }
+  NEG:
+    source: |-
+      RefCell::new(5usize)
+    code: |-
+      use std::cell::RefCell;
+
+      fn main() {
+          let x = SOURCE!();
+          let y = unsafe { x.try_borrow_unguarded().unwrap() };
+          
+          let _ = *y + 1;
+      }
+
+## char
+- description: Producing an invalid value - not all valid u32s are valid chars
+  tags:
+    - SP(Typed)
+    - UB(Producing an invalid value)
+    - CQ()
+  features:
+    - Method core::char::methods::from_u32_unchecked
+  type: |-
+    u32
+  value: |-
+    0x2764
+  POS:
+    source: |-
+      0x110000
+    code: |-
+      #![feature(assoc_char_funcs)]
+      fn main() {
+          let x: u32 = SOURCE!();
+          unsafe { let _ = char::from_u32_unchecked(x); }; // SINK
+      }
+  NEG:
+    source: |-
+      0x2764
+    code: |-
+      #![feature(assoc_char_funcs)]
+      fn main() {
+          let x: u32 = SOURCE!();
+          unsafe { let _ = char::from_u32_unchecked(x); };
+      }
+
 ## CStr
+- description: Producing an invalid value - The provided slice must be nul-terminated and not contain any interior nul bytes
+  tags:
+    - SP(Encoded)
+    - UB(Producing an invalid value)
+    - CQ()
+  features:
+    - Method core::ffi::c_str::CStr::from_bytes_with_nul_unchecked
+  type: |-
+    &'static [u8]
+  value: |-
+    b"hello\0"
+  POS:
+    source: |-
+      b"hello"
+    code: |-
+      use std::ffi::CStr;
+
+      fn main() {
+          let bytes: &[u8] = SOURCE!();
+          unsafe { let _ = CStr::from_bytes_with_nul_unchecked(bytes); }; // SINK
+      }
+  NEG:
+    source: |-
+      b"hello\0"
+    code: |-
+      use std::ffi::CStr;
+
+      fn main() {
+          let bytes: &[u8] = SOURCE!();
+          unsafe { let _ = CStr::from_bytes_with_nul_unchecked(bytes); };
+      }
+
+- description: Producing an invalid value - The provided slice must be nul-terminated and not contain any interior nul bytes
+  tags:
+    - SP(Encoded)
+    - UB(Producing an invalid value)
+    - CQ()
+  features:
+    - Method core::ffi::c_str::CStr::from_bytes_with_nul_unchecked
+  type: |-
+    &'static [u8]
+  value: |-
+    b"hello\0"
+  POS:
+    source: |-
+      b"he\0llo\0"
+    code: |-
+      use std::ffi::CStr;
+
+      fn main() {
+          let bytes = SOURCE!();
+          unsafe { let _ = CStr::from_bytes_with_nul_unchecked(bytes); }; // SINK
+      }
+  NEG:
+    source: |-
+      b"hello\0"
+    code: |-
+      use std::ffi::CStr;
+
+      fn main() {
+          let bytes = SOURCE!();
+          unsafe { let _ = CStr::from_bytes_with_nul_unchecked(bytes); };
+      }
+
 - description: Producing an invalid value - BO - The memory pointed to by ptr must contain a valid nul terminator at the end of the string
   tags:
     - SP(Encoded)
@@ -497,6 +1131,48 @@
       fn main() {
           let ptr: *const c_char = SOURCE!();
           unsafe { let _ = CStr::from_ptr(ptr); };
+      }
+
+- description: Breaking the pointer aliasing rules - The memory referenced by the returned CStr must not be mutated for the duration of lifetime 'a.
+  tags:
+    - SP(Alised)
+    - UB(Breaking the pointer aliasing rules)
+    - CQ()
+  features:
+    - Method core::ffi::c_str::CStr::from_ptr
+  type: |-
+    *const c_char
+  value: |-
+    b"111!\0".as_ptr().cast()
+  POS:
+    source: |-
+      bytes.as_ptr().cast()
+    code: |-
+      use std::ffi::{c_char, CStr};
+
+      fn main() {
+          let mut str = String::from("111\0");
+          let bytes = unsafe { str.as_bytes_mut() };
+          let ptr: *const c_char = SOURCE!();
+
+          let cstr: &CStr = unsafe { CStr::from_ptr(ptr) };
+          bytes[0] = b'0'; // SINK
+          assert_eq!(cstr.to_bytes_with_nul(), bytes);
+      }
+  NEG:
+    source: |-
+      bytes.as_ptr().cast()
+    code: |-
+      use std::ffi::{c_char, CStr};
+
+      fn main() {
+          let mut str = String::from("111\0");
+          let bytes = unsafe { str.as_bytes_mut() };
+          let ptr: *const c_char = SOURCE!();
+
+          let cstr: &CStr = unsafe { CStr::from_ptr(ptr) };
+          
+          assert_eq!(cstr.to_bytes_with_nul(), bytes);
       }
 
 ## ManuallyDrop
@@ -570,6 +1246,39 @@
           let mut slot = SOURCE!();
           
           ManuallyDrop::into_inner(slot);
+      }
+
+## transmute
+- description: Producing an invalid value - Both the argument and the result must be valid at their given type
+  tags:
+    - SP(Untyped)
+    - UB(Producing an invalid value)
+    - CQ()
+  features:
+    - Function std::mem::transmute
+  type: |-
+    u8
+  value: |-
+    1
+  POS:
+    source: |-
+      2
+    code: |-
+      use std::mem::transmute;
+
+      fn main() {
+          let src: u8 = SOURCE!();
+          let _: bool = unsafe { transmute(src) }; // SINK
+      }
+  NEG:
+    source: |-
+      1
+    code: |-
+      use std::mem::transmute;
+
+      fn main() {
+          let src: u8 = SOURCE!();
+          let _: bool = unsafe { transmute(src) };
       }
 
 ## MaybeUninit
@@ -1042,6 +1751,79 @@
           unsafe { MaybeUninit::slice_assume_init_ref(&mut array)[0] };
       }
 
+## NonZero
+- description: Arithmetic overflow
+  tags:
+    - SP(Numerical)
+    - UB(Arithmetic overflow)
+    - CQ()
+  features:
+    - Method core::num::nonzero::NonZero::unchecked_add
+  type: |-
+    NonZeroU32
+  value: |-
+    NonZeroU32::new(1).unwrap()
+  POS:
+    source: |-
+      NonZeroU32::MAX
+    code: |-
+      #![feature(nonzero_ops)]
+      #![feature(nonzero_min_max)]
+      use std::num::NonZeroU32;
+
+      fn main() {
+          let x = SOURCE!();
+          unsafe { x.unchecked_add(1) }; // SINK
+      }
+  NEG:
+    source: |-
+      NonZeroU32::new(1).unwrap()
+    code: |-
+      #![feature(nonzero_ops)]
+      use std::num::NonZeroU32;
+
+      fn main() {
+          let x = SOURCE!();
+          unsafe { x.unchecked_add(1) };
+      }
+
+- description: Arithmetic overflow
+  tags:
+    - SP(Numerical)
+    - UB(Arithmetic overflow)
+    - CQ()
+  features:
+    - Method core::num::nonzero::NonZero::unchecked_mul
+  type: |-
+    NonZeroU32
+  value: |-
+    NonZeroU32::new(1).unwrap()
+  POS:
+    source: |-
+      NonZeroU32::MAX
+    code: |-
+      #![feature(nonzero_ops)]
+      #![feature(nonzero_min_max)]
+      use std::num::NonZeroU32;
+
+      fn main() {
+          let x = SOURCE!();
+          let two = NonZeroU32::new(2).unwrap();
+          unsafe { x.unchecked_mul(two) }; // SINK
+      }
+  NEG:
+    source: |-
+      NonZeroU32::new(1).unwrap()
+    code: |-
+      #![feature(nonzero_ops)]
+      use std::num::NonZeroU32;
+
+      fn main() {
+          let x = SOURCE!();
+          let two = NonZeroU32::new(2).unwrap();
+          unsafe { x.unchecked_mul(two) };
+      }
+
 ## Range
 - description: Dangling pointer access - BO - Calling this method with an out-of-bounds index is undefined behavior
   tags:
@@ -1198,6 +1980,166 @@
       }
 
 ## Primitive
+### char
+- description: Arithmetic overflow
+  tags:
+    - SP(Numerical)
+    - UB(Arithmetic overflow)
+    - CQ()
+  features:
+    - Method char::backward_unchecked
+  type: |-
+    char
+  value: |-
+    'A'
+  POS:
+    source: |-
+      '\u{000000}'
+    code: |-
+      #![feature(step_trait)]
+      #![feature(unchecked_math)]
+      use std::iter::Step;
+      fn main() {
+          let start: char = SOURCE!();
+          unsafe { char::backward_unchecked(start, 1) }; // SINK
+      }
+  NEG:
+    source: |-
+      'A'
+    code: |-
+      #![feature(step_trait)]
+      #![feature(unchecked_math)]
+      use std::iter::Step;
+      fn main() {
+          let start: char = SOURCE!();
+          unsafe { char::backward_unchecked(start, 1) };
+      }
+
+- description: Arithmetic overflow
+  tags:
+    - SP(Numerical)
+    - UB(Arithmetic overflow)
+    - CQ()
+  features:
+    - Method char::forward_unchecked
+  type: |-
+    char
+  value: |-
+    'A'
+  POS:
+    source: |-
+      '\u{10ffff}'
+    code: |-
+      #![feature(step_trait)]
+      #![feature(unchecked_math)]
+      use std::iter::Step;
+      fn main() {
+          let start: char = SOURCE!();
+          unsafe { char::forward_unchecked(start, 1) }; // SINK
+      }
+  NEG:
+    source: |-
+      'A'
+    code: |-
+      #![feature(step_trait)]
+      #![feature(unchecked_math)]
+      use std::iter::Step;
+      fn main() {
+          let start: char = SOURCE!();
+          unsafe { char::forward_unchecked(start, 1) };
+      }
+
+### float
+- description: Invoking undefined behavior via compiler intrinsics - Not be NaN
+  tags:
+    - SP(Numerical)
+    - UB(Invoking undefined behavior via compiler intrinsics)
+    - CQ()
+  features:
+    - Method core::f32::to_int_unchecked
+  type: |-
+    f32
+  value: |-
+    3.14_f32
+  POS:
+    source: |-
+      f32::NAN
+    code: |-
+      #![feature(assoc_char_funcs)]
+      fn main() {
+          let value = SOURCE!();
+          unsafe { value.to_int_unchecked::<u32>() }; // SINK
+      }
+  NEG:
+    source: |-
+      3.14_f32
+    code: |-
+      #![feature(assoc_char_funcs)]
+      fn main() {
+          let value = SOURCE!();
+          unsafe { value.to_int_unchecked::<u32>() };
+      }
+
+- description: Invoking undefined behavior via compiler intrinsics - Not be infinite
+  tags:
+    - SP(Numerical)
+    - UB(Invoking undefined behavior via compiler intrinsics)
+    - CQ()
+  features:
+    - Method core::f32::to_int_unchecked
+  type: |-
+    f32
+  value: |-
+    3.14_f32
+  POS:
+    source: |-
+      f32::INFINITY
+    code: |-
+      #![feature(assoc_char_funcs)]
+      fn main() {
+          let value = SOURCE!();
+          unsafe { value.to_int_unchecked::<u32>() }; // SINK
+      }
+  NEG:
+    source: |-
+      3.14_f32
+    code: |-
+      #![feature(assoc_char_funcs)]
+      fn main() {
+          let value = SOURCE!();
+          unsafe { value.to_int_unchecked::<u32>() };
+      }
+
+- description: Invoking undefined behavior via compiler intrinsics - Be representable in the return type Int, after truncating off its fractional part
+  tags:
+    - SP(Numerical)
+    - UB(Invoking undefined behavior via compiler intrinsics)
+    - CQ()
+  features:
+    - Method core::f32::to_int_unchecked
+  type: |-
+    f32
+  value: |-
+    3.14_f32
+  POS:
+    source: |-
+      f32::MAX
+    code: |-
+      #![feature(assoc_char_funcs)]
+      fn main() {
+          let value = SOURCE!();
+          unsafe { value.to_int_unchecked::<u32>() }; // SINK
+      }
+  NEG:
+    source: |-
+      3.14_f32
+    code: |-
+      #![feature(assoc_char_funcs)]
+      fn main() {
+          let value = SOURCE!();
+          unsafe { value.to_int_unchecked::<u32>() };
+      }
+
 ### pointer
 - description: Dangling pointer access - BO
   tags:
@@ -1262,6 +2204,43 @@
           unsafe { Box::from_raw(ptr); }
       }
 
+- description: Breaking the pointer aliasing rules - While this reference exists, the memory the pointer points to must not get accessed (read or written) through any other pointer
+  tags:
+    - SP(Alised)
+    - UB(Breaking the pointer aliasing rules)
+    - CQ()
+  features:
+    - Method core::ptr::mut_ptr::as_mut
+  type: |-
+    *mut usize
+  value: |-
+    let z = Box::new(0usize);
+    Box::into_raw(z)
+  POS:
+    source: |-
+      Box::into_raw(x)
+    code: |-
+      fn main() {
+          let x = Box::new(0usize);
+          let ptr1 = SOURCE!();
+          let ref1 = unsafe { ptr1.as_mut().unwrap() };
+          let ref2 = unsafe { ptr1.as_mut().unwrap() }; // SINK
+          assert_eq!(*ref1, *ref2);
+          unsafe { Box::from_raw(ptr1); }
+      }
+  NEG:
+    source: |-
+      Box::into_raw(x)
+    code: |-
+      fn main() {
+          let x = Box::new(0usize);
+          let ptr1 = SOURCE!();
+          let ref1 = unsafe { ptr1.as_mut().unwrap() };
+          
+          assert_eq!(0, *ref1);
+          unsafe { Box::from_raw(ptr1); }
+      }
+
 - description: Dangling pointer access - UAF
   tags:
     - SP(Non-Dangling)
@@ -1293,6 +2272,43 @@
           let ptr = SOURCE!();
           unsafe { ptr.as_ref(); }
           unsafe { Box::from_raw(ptr); }
+      }
+
+- description: Mutate immutable data - While this reference exists, the memory the pointer points to must not get mutated
+  tags:
+    - SP(Mutated)
+    - UB(Breaking the pointer aliasing rules)
+    - CQ()
+  features:
+    - Method core::ptr::mut_ptr::as_ref
+  type: |-
+    *mut usize
+  value: |-
+    let z = Box::new(0usize);
+    Box::into_raw(z)
+  POS:
+    source: |-
+      Box::into_raw(x)
+    code: |-
+      fn main() {
+          let x = Box::new(0usize);
+          let ptr1 = SOURCE!();
+          let ref1 = unsafe { ptr1.as_ref().unwrap() };
+          unsafe { *ptr1 = 1 }; // SINK
+          assert_eq!(0, *ref1);
+          unsafe { Box::from_raw(ptr1); }
+      }
+  NEG:
+    source: |-
+      Box::into_raw(x)
+    code: |-
+      fn main() {
+          let x = Box::new(0usize);
+          let ptr1 = SOURCE!();
+          let ref1 = unsafe { ptr1.as_ref().unwrap() };
+          
+          assert_eq!(0, *ref1);
+          unsafe { Box::from_raw(ptr1); }
       }
 
 - description: Dangling pointer access - UAF
@@ -1330,6 +2346,47 @@
           unsafe { Box::from_raw(ptr); }
       }
 
+- description: Breaking the pointer aliasing rules - While this reference exists, the memory the pointer points to must not get accessed (read or written) through any other pointer
+  tags:
+    - SP(Alised)
+    - UB(Breaking the pointer aliasing rules)
+    - CQ()
+  features:
+    - Method core::ptr::mut_ptr::as_uninit_mut
+  type: |-
+    *mut usize
+  value: |-
+    let z = Box::new(0usize);
+    Box::into_raw(z)
+  POS:
+    source: |-
+      Box::into_raw(x)
+    code: |-
+      #![feature(maybe_uninit_ref)]
+      #![feature(ptr_as_uninit)]
+      fn main() {
+          let x = Box::new(0usize);
+          let ptr1 = SOURCE!();
+          let ref1 = unsafe { ptr1.as_uninit_mut().unwrap().assume_init_mut() };
+          let ref2 = unsafe { ptr1.as_uninit_mut().unwrap().assume_init_mut() }; // SINK
+          assert_eq!(*ref1, *ref2);
+          unsafe { Box::from_raw(ptr1); }
+      }
+  NEG:
+    source: |-
+      Box::into_raw(x)
+    code: |-
+      #![feature(maybe_uninit_ref)]
+      #![feature(ptr_as_uninit)]
+      fn main() {
+          let x = Box::new(0usize);
+          let ptr1 = SOURCE!();
+          let ref1 = unsafe { ptr1.as_uninit_mut().unwrap().assume_init_mut() };
+          
+          assert_eq!(0, *ref1);
+          unsafe { Box::from_raw(ptr1); }
+      }
+
 - description: Dangling pointer access - UAF
   tags:
     - SP(Non-Dangling)
@@ -1363,6 +2420,47 @@
           let ptr = SOURCE!();
           unsafe { ptr.as_uninit_ref(); }
           unsafe { Box::from_raw(ptr); }
+      }
+
+- description: Mutate immutable data - While this reference exists, the memory the pointer points to must not get mutated
+  tags:
+    - SP(Mutated)
+    - UB(Breaking the pointer aliasing rules)
+    - CQ()
+  features:
+    - Method core::ptr::mut_ptr::as_uninit_ref
+  type: |-
+    *mut usize
+  value: |-
+    let z = Box::new(0usize);
+    Box::into_raw(z)
+  POS:
+    source: |-
+      Box::into_raw(x)
+    code: |-
+      #![feature(maybe_uninit_ref)]
+      #![feature(ptr_as_uninit)]
+      fn main() {
+          let x = Box::new(0usize);
+          let ptr1 = SOURCE!();
+          let ref1 = unsafe { ptr1.as_uninit_ref().unwrap().assume_init_ref() };
+          unsafe { *ptr1 = 1 }; // SINK
+          assert_eq!(1, *ref1);
+          unsafe { Box::from_raw(ptr1); }
+      }
+  NEG:
+    source: |-
+      Box::into_raw(x)
+    code: |-
+      #![feature(maybe_uninit_ref)]
+      #![feature(ptr_as_uninit)]
+      fn main() {
+          let x = Box::new(0usize);
+          let ptr1 = SOURCE!();
+          let ref1 = unsafe { ptr1.as_uninit_ref().unwrap().assume_init_ref() };
+          
+          assert_eq!(0, *ref1);
+          unsafe { Box::from_raw(ptr1); }
       }
 
 - description: Dangling pointer access - BO
@@ -1728,6 +2826,165 @@
           unsafe { forget(src.read()); }
       }
 
+### slice
+- description: Invoking undefined behavior via compiler intrinsics - The slice splits exactly into N-element chunks (aka self.len() % N == 0)
+  tags:
+    - SP(Numerical)
+    - UB(Invoking undefined behavior via compiler intrinsics)
+    - CQ()
+  features:
+    - Method core::slice::as_chunks_unchecked
+  type: |-
+    &'static mut [usize]
+  value: |-
+    unsafe { &mut Z[..] }
+  POS:
+    source: |-
+      unsafe { &mut X[..] }
+    code: |-
+      #![feature(slice_as_chunks)]
+      static mut Z: [usize; 12] = [1usize; 12];
+      static mut X: [usize; 16] = [1usize; 16];
+      fn main() {
+          let ptr = SOURCE!();
+          unsafe {
+              ptr.as_chunks_unchecked::<3>(); // SINK
+          }
+      }
+  NEG:
+    source: |-
+      unsafe { &mut X[..] }
+    code: |-
+      #![feature(slice_as_chunks)]
+      static mut Z: [usize; 12] = [1usize; 12];
+      static mut X: [usize; 16] = [1usize; 16];
+      fn main() {
+          let mut x = vec![1usize; 16];
+          let ptr = SOURCE!();
+          unsafe {
+              ptr.as_chunks_unchecked::<2>();
+          }
+      }
+
+- description: Invoking undefined behavior via compiler intrinsics - N != 0
+  tags:
+    - SP(Numerical)
+    - UB(Invoking undefined behavior via compiler intrinsics)
+    - CQ()
+  features:
+    - Method core::slice::as_chunks_unchecked
+  type: |-
+    &'static mut [usize]
+  value: |-
+    unsafe { &mut Z[..] }
+  POS:
+    source: |-
+      unsafe { &mut X[..] }
+    code: |-
+      #![feature(slice_as_chunks)]
+      static mut Z: [usize; 12] = [1usize; 12];
+      static mut X: [usize; 16] = [1usize; 16];
+      fn main() {
+          let mut x = vec![1usize; 16];
+          let ptr = SOURCE!();
+          unsafe {
+              ptr.as_chunks_unchecked::<0>(); // SINK
+          }
+      }
+  NEG:
+    source: |-
+      unsafe { &mut X[..] }
+    code: |-
+      #![feature(slice_as_chunks)]
+      static mut Z: [usize; 12] = [1usize; 12];
+      static mut X: [usize; 16] = [1usize; 16];
+      fn main() {
+          let mut x = vec![1usize; 16];
+          let ptr = SOURCE!();
+          unsafe {
+              ptr.as_chunks_unchecked::<2>();
+          }
+      }
+
+- description: Invoking undefined behavior via compiler intrinsics - The slice splits exactly into N-element chunks (aka self.len() % N == 0)
+  tags:
+    - SP(Numerical)
+    - UB(Invoking undefined behavior via compiler intrinsics)
+    - CQ()
+  features:
+    - Method core::slice::as_chunks_unchecked_mut
+  type: |-
+    &'static mut [usize]
+  value: |-
+    unsafe { &mut Z[..] }
+  POS:
+    source: |-
+      unsafe { &mut X[..] }
+    code: |-
+      #![feature(slice_as_chunks)]
+      static mut Z: [usize; 12] = [1usize; 12];
+      static mut X: [usize; 16] = [1usize; 16];
+      fn main() {
+          let mut x = vec![1usize; 16];
+          let ptr = SOURCE!();
+          unsafe {
+              ptr.as_chunks_unchecked_mut::<3>(); // SINK
+          }
+      }
+  NEG:
+    source: |-
+      unsafe { &mut X[..] }
+    code: |-
+      #![feature(slice_as_chunks)]
+      static mut Z: [usize; 12] = [1usize; 12];
+      static mut X: [usize; 16] = [1usize; 16];
+      fn main() {
+          let mut x = vec![1usize; 16];
+          let ptr = SOURCE!();
+          unsafe {
+              ptr.as_chunks_unchecked_mut::<2>();
+          }
+      }
+
+- description: Invoking undefined behavior via compiler intrinsics - N != 0
+  tags:
+    - SP(Numerical)
+    - UB(Invoking undefined behavior via compiler intrinsics)
+    - CQ()
+  features:
+    - Method core::slice::as_chunks_unchecked_mut
+  type: |-
+    &'static mut [usize]
+  value: |-
+    unsafe { &mut Z[..] }
+  POS:
+    source: |-
+      unsafe { &mut X[..] }
+    code: |-
+      #![feature(slice_as_chunks)]
+      static mut Z: [usize; 12] = [1usize; 12];
+      static mut X: [usize; 16] = [1usize; 16];
+      fn main() {
+          let mut x = vec![1usize; 16];
+          let ptr = SOURCE!();
+          unsafe {
+              ptr.as_chunks_unchecked_mut::<0>(); // SINK
+          }
+      }
+  NEG:
+    source: |-
+      unsafe { &mut X[..] }
+    code: |-
+      #![feature(slice_as_chunks)]
+      static mut Z: [usize; 12] = [1usize; 12];
+      static mut X: [usize; 16] = [1usize; 16];
+      fn main() {
+          let mut x = vec![1usize; 16];
+          let ptr = SOURCE!();
+          unsafe {
+              ptr.as_chunks_unchecked_mut::<2>();
+          }
+      }
 
 ## slice
 - description: Dangling pointer access - UAF
@@ -1912,9 +3169,9 @@
           let y = unsafe {
               x.assume_init()
           };
-          None::<u8>.unwrap();
+          None::<u8>.unwrap(); // SINK
           y.as_ref();
-      } // SINK
+      }
   NEG:
     source: |-
       MaybeUninit::<Box<usize>>::uninit()
@@ -1954,8 +3211,9 @@
           let mut slot = SOURCE!();
           let x = unsafe { ManuallyDrop::take(&mut slot) };
           let _y = ManuallyDrop::into_inner(slot);
-          None::<u8>.unwrap();
-      } // SINK
+          None::<u8>.unwrap(); // SINK
+          forget(x);
+      }
   NEG:
     source: |-
       ManuallyDrop::<Box<usize>>::new(Box::new(1))
@@ -1966,9 +3224,9 @@
       fn main() {
           let mut slot = SOURCE!();
           let x = unsafe { ManuallyDrop::take(&mut slot) };
-          forget(x);
           let _y = ManuallyDrop::into_inner(slot);
-          None::<u8>.unwrap();
+
+          forget(x);
       }
 
 - description: Dangling pointer access - DF
@@ -2171,8 +3429,9 @@
           unsafe {
               ptr.drop_in_place();
           }
-          None::<u8>.unwrap(); 
-      } // SINK
+          None::<u8>.unwrap(); // SINK
+          forget(x);
+      }
   NEG:
     source: |-
       &mut x as *mut Box<i32>
@@ -2182,11 +3441,11 @@
       fn main() {
           let mut x = Box::new(1);
           let ptr = SOURCE!();
-          forget(x);
           unsafe {
               ptr.drop_in_place();
           }
-          None::<u8>.unwrap();
+          
+          forget(x);
       }
 
 - description: Dangling pointer access - DF
@@ -2210,8 +3469,9 @@
           let x = Box::new(12);
           let src = SOURCE!();
           let _y = unsafe { src.read() };
-          None::<u8>.unwrap();
-      } // SINK
+          None::<u8>.unwrap(); // SINK
+          forget(x);
+      }
   NEG:
     source: |-
       &x as *const Box<i32>
@@ -2220,7 +3480,7 @@
       fn main() {
           let x = Box::new(12);
           let src = SOURCE!();
-          forget(x);
           let _y = unsafe { src.read() };
-          None::<u8>.unwrap();
+          
+          forget(x);
       }
