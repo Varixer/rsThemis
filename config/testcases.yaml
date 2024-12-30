@@ -4,7 +4,7 @@
   tags:
     - SP(Initialized)
     - UB(Producing an invalid value)
-    - CQ()
+    - TY(Uninit)
   features:
     - Function std::alloc::alloc
   type: |-
@@ -45,7 +45,7 @@
   tags:
     - SP(Non-Null)
     - UB(Dangling pointer access)
-    - CQ()
+    - TY(NPD)
   features:
     - Function std::alloc::dealloc
   type: |-
@@ -83,7 +83,7 @@
   tags:
     - SP(Non-Null)
     - UB(Dangling pointer access)
-    - CQ()
+    - TY(NPD)
   features:
     - Function std::alloc::realloc
   type: |-
@@ -121,7 +121,7 @@
   tags:
     - SP(Freed)
     - UB(Dangling pointer access)
-    - CQ()
+    - TY(DF)
   features:
     - Function std::alloc::realloc
   type: |-
@@ -161,7 +161,7 @@
   tags:
     - SP(Initialized)
     - UB(Producing an invalid value)
-    - CQ()
+    - TY(Uninit)
   features:
     - Method std::boxed::Box::assume_init
   type: |-
@@ -199,7 +199,7 @@
   tags:
     - SP(Initialized)
     - UB(Producing an invalid value)
-    - CQ()
+    - TY(Uninit)
   features:
     - Method std::rc::Rc::assume_init
   type: |-
@@ -238,7 +238,7 @@
   tags:
     - SP(Freed)
     - UB(Dangling pointer access)
-    - CQ()
+    - TY(UAF)
   features:
     - Method std::rc::Rc::decrement_strong_count
   type: |-
@@ -282,7 +282,7 @@
   tags:
     - SP(Outlived)
     - UB(Dangling pointer access)
-    - CQ()
+    - TY(UAF)
   features:
     - Method std::rc::Rc::get_mut_unchecked
   type: |-
@@ -329,7 +329,7 @@
   tags:
     - SP(Non-Dangling)
     - UB(Dangling pointer access)
-    - CQ()
+    - TY(UAF)
   features:
     - Method std::rc::Rc::increment_strong_count
   type: |-
@@ -373,7 +373,7 @@
   tags:
     - SP(Initialized)
     - UB(Producing an invalid value)
-    - CQ()
+    - TY(Uninit)
   features:
     - Method core::array::iter::IntoIter::new_unchecked
   type: |-
@@ -422,7 +422,7 @@
   tags:
     - SP(Dereferencable)
     - UB(Dangling pointer access)
-    - CQ()
+    - TY(BO)
   features:
     - Method core::array::iter::IntoIter::new_unchecked
   type: |-
@@ -471,7 +471,7 @@
   tags:
     - SP(Encoded)
     - UB(Producing an invalid value)
-    - CQ()
+    - TY(BO)
   features:
     - Method core::ffi::c_str::CStr::from_ptr
   type: |-
@@ -504,7 +504,7 @@
   tags:
     - SP(Freed)
     - UB(Dangling pointer access)
-    - CQ()
+    - TY(UAF)
   features:
     - Method core::mem::manually_drop::ManuallyDrop::drop
   type: |-
@@ -540,7 +540,7 @@
   tags:
     - SP(DualOwned)
     - UB(Dangling pointer access)
-    - CQ()
+    - TY(DF)
   features:
     - Method core::mem::manually_drop::ManuallyDrop::take
   type: |-
@@ -577,7 +577,7 @@
   tags:
     - SP(Initialized)
     - UB(Producing an invalid value)
-    - CQ()
+    - TY(Uninit)
   features:
     - Method core::mem::maybe_uninit::MaybeUninit::array_assume_init
   type: |-
@@ -629,7 +629,7 @@
   tags:
     - SP(Initialized)
     - UB(Producing an invalid value)
-    - CQ()
+    - TY(Uninit)
   features:
     - Method core::mem::maybe_uninit::MaybeUninit::assume_init
   type: |-
@@ -671,7 +671,7 @@
   tags:
     - SP(Initialized)
     - UB(Producing an invalid value)
-    - CQ()
+    - TY(Uninit)
   features:
     - Method core::mem::maybe_uninit::MaybeUninit::assume_init_drop
   type: |-
@@ -713,7 +713,7 @@
   tags:
     - SP(Freed)
     - UB(Dangling pointer access)
-    - CQ()
+    - TY(UAF)
   features:
     - Method core::mem::maybe_uninit::MaybeUninit::assume_init_drop
   type: |-
@@ -754,7 +754,7 @@
   tags:
     - SP(Initialized)
     - UB(Producing an invalid value)
-    - CQ()
+    - TY(Uninit)
   features:
     - Method core::mem::maybe_uninit::MaybeUninit::assume_init_mut
   type: |-
@@ -798,7 +798,7 @@
   tags:
     - SP(Initialized)
     - UB(Producing an invalid value)
-    - CQ()
+    - TY(Uninit)
   features:
     - Method core::mem::maybe_uninit::MaybeUninit::assume_init_read
   type: |-
@@ -842,7 +842,7 @@
   tags:
     - SP(Freed)
     - UB(Dangling pointer access)
-    - CQ()
+    - TY(UAF)
   features:
     - Method core::mem::maybe_uninit::MaybeUninit::assume_init_read
   type: |-
@@ -891,7 +891,7 @@
   tags:
     - SP(Initialized)
     - UB(Producing an invalid value)
-    - CQ()
+    - TY(Uninit)
   features:
     - Method core::mem::maybe_uninit::MaybeUninit::assume_init_ref
   type: |-
@@ -936,7 +936,7 @@
   tags:
     - SP(Initialized)
     - UB(Producing an invalid value)
-    - CQ()
+    - TY(Uninit)
   features:
     - Method core::mem::maybe_uninit::MaybeUninit::slice_assume_init_mut
   type: |-
@@ -991,7 +991,7 @@
   tags:
     - SP(Initialized)
     - UB(Producing an invalid value)
-    - CQ()
+    - TY(Uninit)
   features:
     - Method core::mem::maybe_uninit::MaybeUninit::slice_assume_init_ref
   type: |-
@@ -1047,7 +1047,7 @@
   tags:
     - SP(Dereferencable)
     - UB(Dangling pointer access)
-    - CQ()
+    - TY(BO)
   features:
     - Method core::str::traits::Range::get_unchecked
   type: |-
@@ -1083,7 +1083,7 @@
   tags:
     - SP(Non-Dangling)
     - UB(Dangling pointer access)
-    - CQ()
+    - TY(UAF)
   features:
     - Method core::str::traits::Range::get_unchecked
   type: |-
@@ -1124,7 +1124,7 @@
   tags:
     - SP(Dereferencable)
     - UB(Dangling pointer access)
-    - CQ()
+    - TY(BO)
   features:
     - Method core::str::traits::Range::get_unchecked_mut
   type: |-
@@ -1160,7 +1160,7 @@
   tags:
     - SP(Non-Dangling)
     - UB(Dangling pointer access)
-    - CQ()
+    - TY(UAF)
   features:
     - Method core::str::traits::Range::get_unchecked_mut
   type: |-
@@ -1203,7 +1203,7 @@
   tags:
     - SP(Dereferencable)
     - UB(Dangling pointer access)
-    - CQ()
+    - TY(BO)
   features:
     - Method core::ptr::const_ptr::add
   type: |-
@@ -1233,7 +1233,7 @@
   tags:
     - SP(Non-Dangling)
     - UB(Dangling pointer access)
-    - CQ()
+    - TY(UAF)
   features:
     - Method core::ptr::mut_ptr::as_mut
   type: |-
@@ -1266,7 +1266,7 @@
   tags:
     - SP(Non-Dangling)
     - UB(Dangling pointer access)
-    - CQ()
+    - TY(UAF)
   features:
     - Method core::ptr::mut_ptr::as_ref
   type: |-
@@ -1299,7 +1299,7 @@
   tags:
     - SP(Non-Dangling)
     - UB(Dangling pointer access)
-    - CQ()
+    - TY(UAF)
   features:
     - Method core::ptr::mut_ptr::as_uninit_mut
   type: |-
@@ -1334,7 +1334,7 @@
   tags:
     - SP(Non-Dangling)
     - UB(Dangling pointer access)
-    - CQ()
+    - TY(UAF)
   features:
     - Method core::ptr::mut_ptr::as_uninit_ref
   type: |-
@@ -1369,7 +1369,7 @@
   tags:
     - SP(Dereferencable)
     - UB(Dangling pointer access)
-    - CQ()
+    - TY(BO)
   features:
     - Method core::ptr::const_ptr::byte_add
   type: |-
@@ -1401,7 +1401,7 @@
   tags:
     - SP(Dereferencable)
     - UB(Dangling pointer access)
-    - CQ()
+    - TY(BO)
   features:
     - Method core::ptr::const_ptr::byte_offset
   type: |-
@@ -1433,7 +1433,7 @@
   tags:
     - SP(Dereferencable)
     - UB(Dangling pointer access)
-    - CQ()
+    - TY(BO)
   features:
     - Method core::ptr::const_ptr::offset
   type: |-
@@ -1463,7 +1463,7 @@
   tags:
     - SP(DualOwned)
     - UB(Dangling pointer access)
-    - CQ()
+    - TY(DF)
   features:
     - Method core::ptr::mut_ptr::copy_from
   type: |-
@@ -1503,7 +1503,7 @@
   tags:
     - SP(DualOwned)
     - UB(Dangling pointer access)
-    - CQ()
+    - TY(DF)
   features:
     - Method core::ptr::mut_ptr::copy_from_nonoverlapping
   type: |-
@@ -1543,7 +1543,7 @@
   tags:
     - SP(DualOwned)
     - UB(Dangling pointer access)
-    - CQ()
+    - TY(DF)
   features:
     - Method core::ptr::mut_ptr::copy_to
   type: |-
@@ -1583,7 +1583,7 @@
   tags:
     - SP(DualOwned)
     - UB(Dangling pointer access)
-    - CQ()
+    - TY(DF)
   features:
     - Method core::ptr::mut_ptr::copy_to_nonoverlapping
   type: |-
@@ -1623,7 +1623,7 @@
   tags:
     - SP(DualOwned)
     - UB(Dangling pointer access)
-    - CQ()
+    - TY(DF)
   features:
     - Method core::ptr::mut_ptr::drop_in_place
   type: |-
@@ -1663,7 +1663,7 @@
   tags:
     - SP(Non-Dangling)
     - UB(Dangling pointer access)
-    - CQ()
+    - TY(UAF)
   features:
     - Method core::ptr::const_ptr::read
   type: |-
@@ -1699,7 +1699,7 @@
   tags:
     - SP(DualOwned)
     - UB(Dangling pointer access)
-    - CQ()
+    - TY(DF)
   features:
     - Method core::ptr::const_ptr::read
   type: |-
@@ -1734,7 +1734,7 @@
   tags:
     - SP(Non-Dangling)
     - UB(Dangling pointer access)
-    - CQ()
+    - TY(UAF)
   features:
     - Method core::slice::raw::from_raw_parts
   type: |-
@@ -1771,7 +1771,7 @@
   tags:
     - SP(Non-Dangling)
     - UB(Dangling pointer access)
-    - CQ()
+    - TY(UAF)
   features:
     - Method core::slice::raw::from_raw_parts_mut
   type: |-
@@ -1808,7 +1808,7 @@
   tags:
     - SP(Non-Dangling)
     - UB(Dangling pointer access)
-    - CQ()
+    - TY(UAF)
   features:
     - Method core::slice::raw::from_ptr_range
   type: |-
@@ -1847,7 +1847,7 @@
   tags:
     - SP(Non-Dangling)
     - UB(Dangling pointer access)
-    - CQ()
+    - TY(UAF)
   features:
     - Method core::slice::raw::from_raw_parts_mut
   type: |-
@@ -1889,7 +1889,7 @@
   tags:
     - SP(Initialized)
     - UB(Producing an invalid value)
-    - CQ()
+    - TY(Uninit)
   features:
     - Method core::mem::maybe_uninit::MaybeUninit::assume_init
     - PS
@@ -1935,7 +1935,7 @@
   tags:
     - SP(DualOwned)
     - UB(Dangling pointer access)
-    - CQ()
+    - TY(DF)
   features:
     - Method core::mem::manually_drop::ManuallyDrop::take
     - PS
@@ -1975,7 +1975,7 @@
   tags:
     - SP(DualOwned)
     - UB(Dangling pointer access)
-    - CQ()
+    - TY(DF)
   features:
     - Method core::ptr::mut_ptr::copy_from
     - PS
@@ -2019,7 +2019,7 @@
   tags:
     - SP(DualOwned)
     - UB(Dangling pointer access)
-    - CQ()
+    - TY(DF)
   features:
     - Method core::ptr::mut_ptr::copy_from_nonoverlapping
     - PS
@@ -2063,7 +2063,7 @@
   tags:
     - SP(DualOwned)
     - UB(Dangling pointer access)
-    - CQ()
+    - TY(DF)
   features:
     - Method core::ptr::mut_ptr::copy_to
     - PS
@@ -2107,7 +2107,7 @@
   tags:
     - SP(DualOwned)
     - UB(Dangling pointer access)
-    - CQ()
+    - TY(DF)
   features:
     - Method core::ptr::mut_ptr::copy_to_nonoverlapping
     - PS
@@ -2151,7 +2151,7 @@
   tags:
     - SP(DualOwned)
     - UB(Dangling pointer access)
-    - CQ()
+    - TY(DF)
   features:
     - Method core::ptr::mut_ptr::drop_in_place
     - PS
@@ -2193,7 +2193,7 @@
   tags:
     - SP(DualOwned)
     - UB(Dangling pointer access)
-    - CQ()
+    - TY(DF)
   features:
     - Method core::ptr::const_ptr::read
     - PS
