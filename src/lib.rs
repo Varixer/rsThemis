@@ -2,25 +2,24 @@ mod config;
 mod eval_tree;
 mod utils;
 
-use clap::ValueEnum;
 use config::{Flows, Testcases};
+use core::fmt;
 use eval_tree::{EvalNode, EvalTree};
 use log::{error, info};
 use rand::Rng as _;
-use rayon::prelude::*;
-use serde::Serialize;
+use rayon::iter::{IntoParallelRefIterator as _, ParallelIterator as _};
 use std::{
     collections::VecDeque,
     ops::{Deref, DerefMut},
     path::PathBuf,
     process::{Command, Output},
 };
+use tabled::{Table, Tabled};
 
 pub struct Evaluator {
     executor: Executor,
     config: Config,
     targets: Vec<usize>,
-    level: Level,
     output: PathBuf,
 }
 
@@ -29,7 +28,6 @@ impl Evaluator {
         tool: PathBuf,
         config: PathBuf,
         targets: Vec<usize>,
-        level: Level,
         length: usize,
         depth: usize,
         output: PathBuf,
@@ -42,7 +40,6 @@ impl Evaluator {
             executor: Executor::new(tool, harness),
             config: Config::new(config, length, depth),
             targets,
-            level,
             output,
         }
     }
@@ -60,8 +57,13 @@ impl Evaluator {
             .map(|&idx| self.evaluate_one(idx))
             .collect();
 
+        let report = EvalReport::report(self.executor.name(), &summaries);
+
         // 写入结果
         utils::serialize_to_csv(&summaries, self.output.join("EvalSummary.csv")).unwrap();
+
+        // 写入报告
+        println!("{}", Table::new(vec![report]));
     }
 
     pub(crate) fn evaluate_one(&self, idx: usize) -> EvalSummary {
@@ -79,7 +81,7 @@ impl Evaluator {
     }
 
     pub(crate) fn evaluate(&self, idx: usize) -> EvalSummary {
-        let process = |expr: &Expr, (pos, neg): (Program, Program)| -> EvalResult {
+        let process = |expr: &Expr, (pos, neg): (Program, Program)| -> EvalResults {
             // 写入文件
             info!(
                 "Write testcase-{:03} with expression-{} into file system",
@@ -97,10 +99,8 @@ impl Evaluator {
                 self.executor.execute(idx, pos),
                 self.executor.execute(idx, neg),
             );
-            match self.level {
-                Level::LOW => utils::low_evaluate(outputs),
-                Level::HIGH => utils::high_evaluate(outputs),
-            }
+
+            utils::evaluate(outputs)
         };
 
         // 获取要评估的 testcase
@@ -119,7 +119,7 @@ impl Evaluator {
         let root = EvalNode::new(&src_expr.num, res);
         tree.set_root(root);
         // 评估嵌套 flow 后的 testcase
-        if let EvalResult::Pass = res {
+        if let EvalResults(EvalResult::TP, EvalResult::TN) = res {
             // exprs 初始化
             let mut exprs = Exprs::new();
             exprs.push(Expr::source());
@@ -136,7 +136,7 @@ impl Evaluator {
                     summary.count(&res); // 统计
                     tree.add_child(&src.num, &expr.num, res).unwrap(); // 插入评估树
 
-                    if let EvalResult::Pass = res {
+                    if let EvalResults(EvalResult::TP, EvalResult::TN) = res {
                         if expr.length < self.config.length && expr.depth < self.config.depth {
                             sources.push_back(expr.clone());
                             exprs.push(expr);
@@ -167,6 +167,15 @@ impl Executor {
         Executor { tool, harness }
     }
 
+    pub(crate) fn name(&self) -> String {
+        self.tool
+            .file_stem()
+            .unwrap()
+            .to_os_string()
+            .into_string()
+            .unwrap()
+    }
+
     pub(crate) fn execute(&self, idx: usize, program: Program) -> Output {
         program.into_harness(&self.harness.join(format!("harness-{}", idx)));
         Command::new(&self.tool)
@@ -177,27 +186,37 @@ impl Executor {
 }
 
 #[derive(Debug, Clone, Copy)]
+pub(crate) struct EvalResults(EvalResult, EvalResult);
+
+#[derive(Debug, Clone, Copy)]
 pub(crate) enum EvalResult {
-    Err,  // 工具执行出错
-    Pass, // 通过
-    FP,   // 误报
-    FN,   // 漏报
+    Err, // 工具执行出错
+    TP,
+    FP, // 误报
+    FN, // 漏报
+    TN,
 }
 
-#[derive(Serialize)]
+#[derive(serde::Serialize)]
 pub(crate) struct EvalSummary {
     #[serde(
         rename = "编号",
         serialize_with = "EvalSummary::format_with_leading_zeros"
     )]
     idx: usize,
-    #[serde(rename = "通过")]
-    pass_count: usize,
-    #[serde(rename = "误报")]
-    fp_count: usize,
-    #[serde(rename = "漏报")]
+    #[serde(rename = "变体")]
+    variant_count: usize,
+    #[serde(rename = "RD")]
+    robust_count: usize,
+    #[serde(rename = "TP")]
+    tp_count: usize,
+    #[serde(rename = "FN")]
     fn_count: usize,
-    #[serde(rename = "错误")]
+    #[serde(rename = "FP")]
+    fp_count: usize,
+    #[serde(rename = "TN")]
+    tn_count: usize,
+    #[serde(rename = "ER")]
     err_count: usize,
 }
 
@@ -206,20 +225,33 @@ impl EvalSummary {
     pub(crate) fn new(idx: usize) -> Self {
         EvalSummary {
             idx,
-            pass_count: 0,
+            variant_count: 0,
+            robust_count: 0,
+            tp_count: 0,
             fp_count: 0,
             fn_count: 0,
+            tn_count: 0,
             err_count: 0,
         }
     }
 
     /// Count based on res enumeration
-    pub(crate) fn count(&mut self, res: &EvalResult) {
-        match res {
+    pub(crate) fn count(&mut self, res: &EvalResults) {
+        self.variant_count += 1;
+        match res.0 {
             EvalResult::Err => self.err_count += 1,
-            EvalResult::Pass => self.pass_count += 1,
-            EvalResult::FP => self.fp_count += 1,
+            EvalResult::TP => self.tp_count += 1,
             EvalResult::FN => self.fn_count += 1,
+            _ => unreachable!(), // POS Case 不存在 TN 和 FP
+        }
+        match res.1 {
+            EvalResult::Err => self.err_count += 1,
+            EvalResult::FP => self.fp_count += 1,
+            EvalResult::TN => self.tn_count += 1,
+            _ => unreachable!(), // NEG Case 不存在 TP 和 FN
+        }
+        if let EvalResults(EvalResult::TP, EvalResult::TN) = res {
+            self.robust_count += 1;
         }
     }
 
@@ -233,6 +265,71 @@ impl EvalSummary {
     {
         let formatted = format!("{:03}", num); // Format number with leading zeros, width = 3
         serializer.serialize_str(&formatted)
+    }
+}
+
+#[derive(Default)]
+pub(crate) struct Metric {
+    normal: usize,
+    absolute: usize,
+}
+
+impl fmt::Display for Metric {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // 定义格式为 "normal (absolute)"
+        write!(f, "{} ({})", self.normal, self.absolute)
+    }
+}
+
+impl Metric {
+    pub(crate) fn count(&mut self, src: usize, tar: usize) {
+        if src != 0 {
+            self.normal += 1;
+            if src == tar {
+                self.absolute += 1;
+            }
+        }
+    }
+}
+
+#[derive(Default, Tabled)]
+pub(crate) struct EvalReport {
+    #[tabled(rename = "工具")]
+    tool: String,
+    #[tabled(rename = "鲁棒检测 (RD)")]
+    robust_detection: Metric,
+    #[tabled(rename = "真正例 (TP)")]
+    true_positive: Metric,
+    #[tabled(rename = "漏报 (FN)")]
+    false_negative: Metric,
+    #[tabled(rename = "误报 (FP)")]
+    false_postive: Metric,
+    #[tabled(rename = "真反例 (TN)")]
+    true_negative: Metric,
+    #[tabled(rename = "错误 (ER)")]
+    error: Metric,
+}
+
+impl EvalReport {
+    pub(crate) fn new(tool: String) -> Self {
+        Self {
+            tool,
+            ..Default::default()
+        }
+    }
+    pub(crate) fn report(tool: String, summaries: &[EvalSummary]) -> Self {
+        let mut report = EvalReport::new(tool);
+        summaries.iter().for_each(|s| {
+            report
+                .robust_detection
+                .count(s.robust_count, s.variant_count);
+            report.true_positive.count(s.tp_count, s.variant_count);
+            report.false_negative.count(s.fn_count, s.variant_count);
+            report.false_postive.count(s.fp_count, s.variant_count);
+            report.true_negative.count(s.tn_count, s.variant_count);
+            report.error.count(s.err_count, s.variant_count * 2);
+        });
+        report
     }
 }
 
@@ -345,12 +442,6 @@ impl Config {
             depth,
         }
     }
-}
-
-#[derive(Copy, Clone, Debug, PartialEq, Eq, ValueEnum)]
-pub enum Level {
-    LOW,
-    HIGH,
 }
 
 #[cfg(test)]

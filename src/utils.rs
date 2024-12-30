@@ -9,7 +9,7 @@ use std::{
 
 use log::info;
 
-use crate::{EvalResult, EvalSummary, Program};
+use crate::{EvalResult, EvalResults, EvalSummary, Program};
 
 /// Usage: `cargo new --vcs none --edtion 2018 harness`
 pub(crate) fn generate_harness<P>(path: P)
@@ -47,30 +47,26 @@ where
     }
 }
 
-/// 高精度的评估逻辑实现
-pub(crate) fn high_evaluate((pos, neg): (Output, Output)) -> EvalResult {
-    if pos.status.success() && neg.status.success() {
-        match (pos.stdout.is_empty(), neg.stdout.is_empty()) {
-            (false, true) => EvalResult::Pass, // 通过
-            (false, false) => EvalResult::FP,  // 误报
-            _ => EvalResult::FN,               // 漏报
+/// 评估逻辑实现
+/// TODO: 标准化 + 解析器
+pub(crate) fn evaluate((pos, neg): (Output, Output)) -> EvalResults {
+    let pos_res =  if pos.status.success() {
+        match pos.stdout.is_empty() {
+            true => EvalResult::FN, // 漏报
+            false => EvalResult::TP,
         }
     } else {
         EvalResult::Err
-    }
-}
-
-/// 低精度的评估逻辑实现
-pub(crate) fn low_evaluate((pos, neg): (Output, Output)) -> EvalResult {
-    if pos.status.success() && neg.status.success() {
-        match (pos.stdout.is_empty(), neg.stdout.is_empty()) {
-            (false, _) => EvalResult::Pass, // 通过
-            // (false, false) => EvalResult::FP,  // 误报
-            _ => EvalResult::FN,               // 漏报
+    };
+    let neg_res =  if neg.status.success() {
+        match neg.stdout.is_empty() {
+            true => EvalResult::TN,
+            false => EvalResult::FP, // 误报
         }
     } else {
         EvalResult::Err
-    }
+    };
+    EvalResults(pos_res, neg_res)
 }
 
 pub(crate) fn write(path: PathBuf, (pos, neg): (&Program, &Program)) {

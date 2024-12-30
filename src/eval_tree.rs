@@ -4,17 +4,17 @@ use std::{
     rc::Rc,
 };
 
-use crate::EvalResult;
+use crate::{EvalResult, EvalResults};
 
 pub(crate) struct EvalNode {
     name: String,
-    res: EvalResult,
+    res: EvalResults,
     children: Vec<Rc<RefCell<EvalNode>>>,
 }
 
 impl EvalNode {
     /// 创建新节点
-    pub(crate) fn new(name: &str, res: EvalResult) -> Rc<RefCell<Self>> {
+    pub(crate) fn new(name: &str, res: EvalResults) -> Rc<RefCell<Self>> {
         Rc::new(RefCell::new(Self {
             name: name.to_string(),
             res,
@@ -28,11 +28,13 @@ impl EvalNode {
         *counter += 1;
 
         // 定义节点的颜色
-        let color = match self.res {
-            EvalResult::Err => "red",
-            EvalResult::Pass => "green",
-            EvalResult::FP => "blue",
-            EvalResult::FN => "orange",
+        let color = match (self.res.0, self.res.1) {
+            (EvalResult::Err, _) | (_, EvalResult::Err) => "red",
+            (EvalResult::TP, EvalResult::TN) => "green",
+            (EvalResult::TP, EvalResult::FP) => "blue", // 误报
+            (EvalResult::FN, EvalResult::FP) => "gray", // 漏报 + 误报
+            (EvalResult::FN, EvalResult::TN) => "orange", // 漏报
+            _ => unreachable!()
         };
 
         // 添加当前节点
@@ -89,7 +91,7 @@ impl EvalTree {
         &mut self,
         parent_name: &str,
         child_name: &str,
-        child_res: EvalResult,
+        child_res: EvalResults,
     ) -> Result<(), String> {
         if let Some(parent) = self.get_node(parent_name) {
             let child = EvalNode::new(child_name, child_res);
@@ -123,14 +125,14 @@ mod test {
     fn test() {
         // 创建树并设置根节点
         let mut tree = EvalTree::new();
-        let root = EvalNode::new("Root", EvalResult::Pass);
+        let root = EvalNode::new("Root", EvalResults(EvalResult::TP, EvalResult::TN));
         tree.set_root(Rc::clone(&root));
 
         // 添加子节点
-        tree.add_child("Root", "Child1", EvalResult::Err).unwrap();
-        tree.add_child("Root", "Child2", EvalResult::FP).unwrap();
-        tree.add_child("Child1", "GrandChild1", EvalResult::FN).unwrap();
-        tree.add_child("Child2", "GrandChild2", EvalResult::Pass).unwrap();
+        tree.add_child("Root", "Child1", EvalResults(EvalResult::TP, EvalResult::TN)).unwrap();
+        tree.add_child("Root", "Child2", EvalResults(EvalResult::TP, EvalResult::FP)).unwrap();
+        tree.add_child("Child1", "GrandChild1", EvalResults(EvalResult::FN, EvalResult::TN)).unwrap();
+        tree.add_child("Child2", "GrandChild2", EvalResults(EvalResult::FN, EvalResult::FP)).unwrap();
 
         // 生成 DOT 文件内容
         let dot_content = tree.to_dot();
