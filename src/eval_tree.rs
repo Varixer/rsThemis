@@ -1,14 +1,16 @@
-use std::{
-    cell::RefCell,
-    collections::HashMap,
-    rc::Rc,
-};
+use std::{cell::RefCell, collections::HashMap, fs::File, path::PathBuf, rc::Rc};
+
+use serde::{ser::SerializeSeq as _, Serialize, Serializer};
 
 use crate::{EvalResult, EvalResults};
 
+#[derive(Debug, Serialize)]
 pub(crate) struct EvalNode {
+    #[serde(rename = "index")]
     name: String,
+    #[serde(rename = "result")]
     res: EvalResults,
+    #[serde(rename = "variants", serialize_with = "EvalNode::serialize_children")]
     children: Vec<Rc<RefCell<EvalNode>>>,
 }
 
@@ -34,7 +36,7 @@ impl EvalNode {
             (EvalResult::TP, EvalResult::FP) => "blue", // 误报
             (EvalResult::FN, EvalResult::FP) => "gray", // 漏报 + 误报
             (EvalResult::FN, EvalResult::TN) => "orange", // 漏报
-            _ => unreachable!()
+            _ => unreachable!(),
         };
 
         // 添加当前节点
@@ -52,6 +54,20 @@ impl EvalNode {
         for child in &self.children {
             child.borrow().to_dot(dot, Some(node_id), counter);
         }
+    }
+
+    pub(crate) fn serialize_children<S>(
+        value: &Vec<Rc<RefCell<EvalNode>>>,
+        serializer: S,
+    ) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut seq = serializer.serialize_seq(Some(value.len()))?;
+        for rc in value {
+            seq.serialize_element(&*rc.borrow())?;
+        }
+        seq.end()
     }
 }
 
@@ -116,6 +132,17 @@ impl EvalTree {
         dot.push('}');
         dot
     }
+
+    pub(crate) fn to_json(&self, path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
+        if let Some(root) = &self.root {
+            serde_json::to_writer_pretty(
+                File::create(path.join("evalTree.json"))?,
+                &*root.borrow(),
+            )
+            .unwrap();
+        }
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -129,10 +156,30 @@ mod test {
         tree.set_root(Rc::clone(&root));
 
         // 添加子节点
-        tree.add_child("Root", "Child1", EvalResults(EvalResult::TP, EvalResult::TN)).unwrap();
-        tree.add_child("Root", "Child2", EvalResults(EvalResult::TP, EvalResult::FP)).unwrap();
-        tree.add_child("Child1", "GrandChild1", EvalResults(EvalResult::FN, EvalResult::TN)).unwrap();
-        tree.add_child("Child2", "GrandChild2", EvalResults(EvalResult::FN, EvalResult::FP)).unwrap();
+        tree.add_child(
+            "Root",
+            "Child1",
+            EvalResults(EvalResult::TP, EvalResult::TN),
+        )
+        .unwrap();
+        tree.add_child(
+            "Root",
+            "Child2",
+            EvalResults(EvalResult::TP, EvalResult::FP),
+        )
+        .unwrap();
+        tree.add_child(
+            "Child1",
+            "GrandChild1",
+            EvalResults(EvalResult::FN, EvalResult::TN),
+        )
+        .unwrap();
+        tree.add_child(
+            "Child2",
+            "GrandChild2",
+            EvalResults(EvalResult::FN, EvalResult::FP),
+        )
+        .unwrap();
 
         // 生成 DOT 文件内容
         let dot_content = tree.to_dot();

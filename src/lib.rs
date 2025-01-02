@@ -8,6 +8,7 @@ use eval_tree::{EvalNode, EvalTree};
 use log::{error, info};
 use rand::Rng as _;
 use rayon::iter::{IntoParallelRefIterator as _, ParallelIterator as _};
+use serde::{Serialize, Serializer};
 use std::{
     collections::VecDeque,
     ops::{Deref, DerefMut},
@@ -145,6 +146,7 @@ impl Evaluator {
                 }
             }
         }
+        tree.to_json(self.output.join(format!("testcase-{:03}", idx))).unwrap();
         utils::generate_image_from_dot(
             &tree.to_dot(),
             self.output
@@ -188,7 +190,25 @@ impl Executor {
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct EvalResults(EvalResult, EvalResult);
 
-#[derive(Debug, Clone, Copy)]
+impl Serialize for EvalResults {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let serialized_value = match (self.0, self.1) {
+            (EvalResult::Err, _) | (_, EvalResult::Err) => "Error",
+            (EvalResult::TP, EvalResult::TN) => "True Positive & Negative",
+            (EvalResult::TP, EvalResult::FP) => "False Positive",
+            (EvalResult::FN, EvalResult::FP) => "False Positive & Negative",
+            (EvalResult::FN, EvalResult::TN) => "False Negative",
+            _ => unreachable!(),
+        };
+
+        serializer.serialize_str(serialized_value)
+    }
+}
+
+#[derive(Debug, Clone, Copy, Serialize)]
 pub(crate) enum EvalResult {
     Err, // 工具执行出错
     TP,
