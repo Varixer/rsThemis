@@ -2156,7 +2156,8 @@
   type: |-
     *mut Box<i32>
   value: |-
-    &mut x as *mut Box<i32>
+    let mut z = Box::new(0);
+    &mut z as *mut Box<i32>
   POS:
     source: |-
       &mut x as *mut Box<i32>
@@ -2198,7 +2199,8 @@
   type: |-
     *const Box<i32>
   value: |-
-    &x as *const Box<i32>
+    let mut z = Box::new(0);
+    &mut z as *mut Box<i32>
   POS:
     source: |-
       &x as *const Box<i32>
